@@ -1,0 +1,10 @@
+Package: iterbi
+Type: Package
+Title: A iteratively bifurcated clustering strategy for single-cell sequencing data.
+Version: 0.4.9
+Author: Zhixin Li
+Maintainer: zxlee@connect.hku.hk
+Description: A iteratively bifurcated clustering strategy for single-cell sequencing data.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
