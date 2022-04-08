@@ -1,29 +1,36 @@
 Package: iterbi
 Type: Package
-Title: A iteratively bifurcated clustering strategy for single-cell sequencing data.
+Title: A iteratively bifurcated clustering strategy for single-cell sequencing data
 Version: 0.4.9
-Author: Zhixin Li <zxlee@connect.hku.hk>
-Maintainer: Zhixin Li <zxlee@connect.hku.hk>
+Authors@R: person("Zhixin", "Li", email = "zxlee@hku.hk", role = c("aut", "cre"))
 Description: A iteratively bifurcated clustering strategy for single-cell sequencing data.
-License: GPL-3
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Depends:
-  R (>= 3.6.2),
-  methods
+  R (>= 3.6)
 Imports:
-  stats
-  utils
-  Seurat
-  dplyr
-  ggplot2
-  ComplexHeatmap
-  circlize
-  RColorBrewer
-  clustree
-  fastcluster
-  parallelDist
-  HiClimR
+  stats,
+  utils,
+  Seurat,
+  dplyr,
+  clustree,
+  ggplot2,
+  ComplexHeatmap,
+  RColorBrewer,
+  circlize,
+  fastcluster,
+  parallelDist,
+  HiClimR,
+  clusterProfiler,
+  org.Hs.eg.db,
+  org.Mm.eg.db,
+  Hmisc,
+  stringr,
+  cowplot,
+  plyr
+Suggests:
+  testthat
 URL: https://github.com/leezx/iterbi
 BugReports: https://github.com/leezx/iterbi/issues

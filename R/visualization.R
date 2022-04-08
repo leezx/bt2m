@@ -2,16 +2,16 @@
 # Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #' Prepare expression matrix for heatmap visualization, estimate the overall expression of marker modules
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param iterbi.marker.chain iterbi.marker.chain from iterbi
 #' @param assay Assay used for prediction
 #' @param slot slot used for prediction
 #' @param known_markers the genes to include in the heatmap (like known markers)
-#' 
+#'
 #' @return A expression matrix contain the average expression of marker modules and known markers
 #' @export
-#' 
+#'
 PrepareExpressionMatrix <- function(seuratObj, iterbi.marker.chain, assay="RNA", slot = "scale.data",
                                               known_markers = c()) {
   # get data
@@ -34,10 +34,10 @@ PrepareExpressionMatrix <- function(seuratObj, iterbi.marker.chain, assay="RNA",
 }
 
 #' Colors for iterbi
-#' 
+#'
 #' @return A color vector
 #' @export
-#' 
+#'
 IterbiColors <- function() {
   iterbi.colors <- unique(c(brewer.pal(n = 9, name = "Set1"),
                             brewer.pal(n = 8, name = "Dark2"),
@@ -52,17 +52,17 @@ IterbiColors <- function() {
 }
 
 #' Draw heatmap by ComplexHeatmap
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param iterbi.cellMeta iterbi.cellMeta from iterbi
 #' @param iterbi.marker.chain iterbi.marker.chain from iterbi
 #' @param compare_anno select a annotation in seurat object for comparision (e.g. previous annotation)
 #' @param known_markers the genes to include in the heatmap (like known markers)
-#' 
+#'
 #' @return ComplexHeatmap object
 #' @export
 #'
-DrawMarkerChainHeatmap <- function(seuratObj, iterbi.cellMeta, iterbi.marker.chain, compare_anno="", 
+DrawMarkerChainHeatmap <- function(seuratObj, iterbi.cellMeta, iterbi.marker.chain, compare_anno="",
                                         known_markers=c()) {
   # get data
   all.exprMat <- PrepareExpressionMatrix(seuratObj, iterbi.marker.chain, known_markers=known_markers)
@@ -108,10 +108,10 @@ DrawMarkerChainHeatmap <- function(seuratObj, iterbi.cellMeta, iterbi.marker.cha
 }
 
 #' Write iterbi result to Seurat object
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param iterbi.result iterbi.result
-#' 
+#'
 #' @return A Seurat object contains iterbi.result. iterbi will be stored in assay data region of Seurat object ("seuratObj@assays$iterbi")
 #' @export
 #'
@@ -132,12 +132,12 @@ WriteIterbiIntoSeurat <- function(seuratObj, iterbi.result) {
 }
 
 #' Draw cluster tree/chain by clustree
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param iterbi.cellMeta iterbi.cellMeta from iterbi
 #' @param node_text_size see node_text_size in clustree function
 #' @param node_size see node_size in clustree function
-#' 
+#'
 #' @return clustree object
 #' @export
 #'
@@ -156,9 +156,9 @@ DrawIterbiClusterTree <- function(seuratObj, iterbi.cellMeta, node_text_size=7, 
 }
 
 #' Remove duplicated markers from last level
-#' 
+#'
 #' @param iterbi.marker.chain iterbi.marker.chain from iterbi
-#' 
+#'
 #' @return iterbi.marker.chain without duplicated genes
 #' @export
 #'
@@ -168,14 +168,14 @@ RemoveDuplicatedMarker <- function(iterbi.marker.chain) {
 }
 
 #' Draw cluster tree/chain by clustree
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param iterbi.marker.chain iterbi.marker.chain from iterbi
 #' @param rmDup remove duplicated genes or not
 #' @param top_n top n genes for dotplot (sort by P-value)
 #' @param rel_heights relative heights for plot_grid(), the first and last control the height of top and bottom margin, the middle one controls the height of tree
 #' @param rel_widths relative widths for plot_grid(), the first one controls the widths of tree, the second one controls the widths of dotplot
-#' 
+#'
 #' @return A plot_grid integrated tree and dotplot
 #' @export
 #'
@@ -185,7 +185,7 @@ DrawMarkerChainDotplot <- function(seuratObj, iterbi.marker.chain, rmDup=T, top_
   # check level, set to the last
   check_level <- colnames(iterbi.cellMeta)[ncol(iterbi.cellMeta)]
   # set active.ident
-  seuratObj@active.ident <- dataframe_to_vector(seuratObj[[check_level]])
+  seuratObj@active.ident <- DataframeToVector(seuratObj[[check_level]])
   #
   top <- subset(iterbi.marker.chain.rmDup) %>%
     group_by(new_cluster) %>%
@@ -199,17 +199,17 @@ DrawMarkerChainDotplot <- function(seuratObj, iterbi.marker.chain, rmDup=T, top_
 }
 
 #' Draw barplot for GO annotation
-#' 
+#'
 #' @param barplot_df A GO annotation dataframe from clusterProfiler
 #' @param cluster.chain cluster.chain from iterbi
-#' 
+#'
 #' @return A ggplot barplot
 #' @export
 #'
 DrawBarplotGO <- function(barplot_df, cluster.chain) {
-  library(Hmisc)
-  library(stringr)
-  library(RColorBrewer)
+  # library(Hmisc)
+  # library(stringr)
+  # library(RColorBrewer)
   colors <- brewer.pal(12, "Set1")
   # colors <- brewer.pal(10,"Paired")
   for (i in 1:dim(barplot_df)[1]) {
@@ -239,18 +239,18 @@ DrawBarplotGO <- function(barplot_df, cluster.chain) {
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),  plot.margin=unit(c(0,0,0,0), "cm"),
           panel.border = element_blank()) +
     theme(axis.line = element_line(color = 'black')) +
-    scale_x_discrete(labels=function(x) str_wrap(x, width=25), limits = rev(barplot_df$Description)) +
+    scale_x_discrete(labels=function(x) stringr::str_wrap(x, width=25), limits = rev(barplot_df$Description)) +
     scale_fill_manual(values=colors) +
     scale_color_manual(values=colors)
   g
 }
 
 #' Get GO chain corresponding to a cluster chain
-#' 
+#'
 #' @param iterbi.GO.anno A GO annotation dataframe from clusterProfiler
 #' @param cluster.chain cluster.chain from iterbi
 #' @param top_n top n GO terms for barplot (sort by P-value)
-#' 
+#'
 #' @return A ggplot barplot showed GO chain
 #' @export
 #'

@@ -1,8 +1,14 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+globalVariables(
+  names=c("Count","Description","avg_logFC","bcg_pct","cluster","cluster_pct","correlation","iterbi.cellMeta","iterbi.marker.chain","markerList",
+          "new_cluster","old_cluster","p_val","p_val_adj","pvalue","qvalue","select_cells","seuratObj"),
+  package = "iterbi",
+  add = TRUE
+)
 #' The main function to perform iteratively bifurcation clustering
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param method The method to perform bifurcation clustering "graph (default), hclust or kmeans"
 #' @param min.marker.num Minimal number of markers to confirm a bifurcation
@@ -10,12 +16,12 @@
 #' @param min.cell.count Minimal number of cells to perform bifurcation (must bigger than PC number: 50)
 #' @param res_sets The number of resolution for searching
 #' @param verbose Print detail proccessing messages
-#' 
+#'
 #' @return A list. cellMeta contains the preliminary bifurcation for each level
 #' marker_chain contains all the significant markers for each cluster
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
-#' 
+#'
 RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.level.num = 20,
                        min.cell.count = 50, res_sets = 30, verbose = T) {
   # key index
@@ -146,14 +152,14 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
 }
 
 #' rename the clusters inside the iterbi result
-#' 
+#'
 #' @param iterbi.result A result file from RunIterbi() function
 
 #' @return A renamed list. cellMeta contains the final bifurcation for each level
 #' marker_chain contains all the significant markers for each cluster
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
-#' 
+#'
 RenameIterbi <- function(iterbi.result) {
   # rename three files, iterbi.cellMeta is one type, iterbi.marker.chain and iterbi.bifucation are another type
   iterbi.cellMeta <- iterbi.result[["cellMeta"]]
@@ -214,12 +220,12 @@ RenameIterbi <- function(iterbi.result) {
 }
 
 #' transform dataframe to vector
-#' 
+#'
 #' @param df A dataframe from Seuratobj[["attr"]]
 
 #' @return A vector with names
 #' @export
-#' 
+#'
 DataframeToVector <- function(df) {
   # transform dataframe to vector
   tmp.anno.vector <- df[,1]
@@ -228,7 +234,7 @@ DataframeToVector <- function(df) {
 }
 
 #' filter uniquely expressed markers by expression percentage
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param iterbi.marker.chain iterbi.marker.chain dataframe contains all the markers
 #' @param assay Assay used for prediction
@@ -236,14 +242,14 @@ DataframeToVector <- function(df) {
 #' @param min_cluster_pct Minimal expression percentage of target cluster
 #' @param max_bcg_pct Maximum expression percentage of the background cells (non-target cells)
 #' @param min_diff Minimal difference (expression percentage) between target cluster and background cells
-#' 
+#'
 #' @return Uniquely expressed iterbi.marker.chain
 #' @export
-#' 
-GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data", 
+#'
+GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data",
                               min_cluster_pct = 0.3, max_bcg_pct = 0.1, min_diff = 0.3) {
   # rm duplicate markers from last
-  iterbi.marker.chain.uniq <- remove_duplicate_marker_chain(iterbi.marker.chain)
+  iterbi.marker.chain.uniq <- RemoveDuplicatedMarker(iterbi.marker.chain)
   iterbi.marker.chain.uniq$cluster_pct <- 0
   iterbi.marker.chain.uniq$bcg_pct <- 0
   # get data
@@ -272,13 +278,13 @@ GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot 
 }
 
 #' remove duplicated GO terms based on overlaps of genes
-#' 
+#'
 #' @param tmp.GO.df GO annotation dataframe from clusterProfiler package
 #' @param max.overlap Maximum overlapped percentage of genes
 #'
 #' @return GO annotation dataframe without duplications
 #' @export
-#' 
+#'
 RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
   # remove duplicated GO
   remain.GOterms <- c()
@@ -296,7 +302,7 @@ RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
 }
 
 #' Perform GO annotation of iterbi.marker.chain dataframe
-#' 
+#'
 #' @param iterbi.marker.chain terbi.marker.chain dataframe contains all the markers
 #' @param organism "hs" for Homo sapiens, or "mm" for Mus musculus
 #' @param pvalueCutoff cut off P-value for GO annotations
@@ -304,7 +310,7 @@ RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
 #'
 #' @return GO annotation dataframe labeled with cluster
 #' @export
-#' 
+#'
 IterbiEnrichGO <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 5) {
   marker.list <- list()
   for (i in unique(iterbi.marker.chain$new_cluster)) {
@@ -337,7 +343,7 @@ IterbiEnrichGO <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.
 #' @export
 #'
 clusterProfilerORA <- function(geneList=markerList, organism="hs") {
-  library(clusterProfiler)
+  # library(clusterProfiler)
   go_list <- list()
   kegg_list <- list()
   nameList <- names(geneList)
@@ -349,7 +355,7 @@ clusterProfilerORA <- function(geneList=markerList, organism="hs") {
     genes <- geneList[[i]]
     projectName <- i
     if (organism=="mm") {
-      library(org.Mm.eg.db) # mouse
+      # library(org.Mm.eg.db) # mouse
       gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Mm.eg.db)
       ego <- enrichGO(gene      = gene.df$ENTREZID,
                   #universe      = genes, # SYMBOL
@@ -370,7 +376,7 @@ clusterProfilerORA <- function(geneList=markerList, organism="hs") {
       kegg_list[[i]] <- kk
       }
     else if (organism=="hs") {
-      library(org.Hs.eg.db)
+      # library(org.Hs.eg.db)
       gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Hs.eg.db)
       ego <- enrichGO(gene      = gene.df$ENTREZID,
                   #universe      = genes, # SYMBOL
@@ -397,13 +403,13 @@ clusterProfilerORA <- function(geneList=markerList, organism="hs") {
 }
 
 #' Subset seurat object by cell names
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param tmp.cells cells for subseting
 #'
 #' @return A subset of seurat object
 #' @export
-#' 
+#'
 subsetSeuratObj <- function(seuratObj, tmp.cells) {
   # tmp.cells <- rownames(tmp.iterbi.cellMeta.3)
   tmp <- rep(F, ncol(seuratObj))
@@ -416,7 +422,7 @@ subsetSeuratObj <- function(seuratObj, tmp.cells) {
 }
 
 #' Find initial bifurcation event of any two clusters in iterbi.cellMeta
-#' 
+#'
 #' @param iterbi.cellMeta iterbi.cellMeta from iterbi
 #' @param cluster_1 cluster 1
 #' @param cluster_2 cluster 2
@@ -425,7 +431,7 @@ subsetSeuratObj <- function(seuratObj, tmp.cells) {
 #' @return A list. subset_seuratObj is the subset cells in cluster 1 and cluster 2
 #' diff_marker_1 is the marker of cluster 1, diff_marker_2 is the marker of cluster 2
 #' @export
-#' 
+#'
 GetInitialBifurcation <- function(iterbi.cellMeta, cluster_1, cluster_2, balance_cells=T) {
   # input any two cluster, trace back to the initial bifurcation event
   level_1 <- strsplit(cluster_1, split = "_")[[1]][1]

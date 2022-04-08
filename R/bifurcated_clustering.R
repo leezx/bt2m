@@ -2,13 +2,13 @@
 # Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #' Find the best resolution for bifurcation in graph-based clustering
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param res_sets The number of resolution for searching
-#' 
+#'
 #' @return The best resolution which can bifurcate all cells
 #' @export
-#' 
+#'
 FindBifurcationResolution <- function(seuratObj, res_sets = 50) {
   # 二分查找
   optimal_resolution <- 0
@@ -39,13 +39,13 @@ FindBifurcationResolution <- function(seuratObj, res_sets = 50) {
 }
 
 #' Bifurcation based on graph-based clustering
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param res_sets The number of resolution for searching
-#' 
+#'
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
-#' 
+#'
 IterbiBifucation.graph <- function(seuratObj, res_sets = 50) {
   # run PCA and SNN
   #message("run IterbiBifucation.graph...")
@@ -59,13 +59,13 @@ IterbiBifucation.graph <- function(seuratObj, res_sets = 50) {
 }
 
 #' Bifurcation based on hierarchical clustering
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param method The distance measurement method "euclidean or correlation"
-#' 
+#'
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
-#' 
+#'
 IterbiBifucation.hclust <- function(seuratObj, method="euclidean") {
   seuratObj <- RunPCA(seuratObj, verbose = F)
   data.use <- Embeddings(object = seuratObj[["pca"]])
@@ -75,20 +75,20 @@ IterbiBifucation.hclust <- function(seuratObj, method="euclidean") {
     distMat <- fastCor(t(data.use))
     distMat <- as.dist(distMat)
   }
-  hc <- hclust(distMat)
+  hc <- fastcluster::hclust(distMat)
   binaryC <- cutree(hc, k = 2)
   seuratObj@active.ident <- factor(binaryC[names(seuratObj@active.ident)]-1)
   return(seuratObj)
 }
 
 #' Bifurcation based on K-means clustering
-#' 
+#'
 #' @param seuratObj A Seurat object
 #' @param method The distance measurement method "euclidean or correlation"
-#' 
+#'
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
-#' 
+#'
 IterbiBifucation.kmeans <- function(seuratObj, method="euclidean") {
   seuratObj <- RunPCA(seuratObj, verbose = F)
   data.use <- Embeddings(object = seuratObj[["pca"]])
