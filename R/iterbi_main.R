@@ -1,4 +1,22 @@
-run.iterbi <- function(seuset, method = "graph", min.marker.num = 100, max.level.num = 20,
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Functions
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#' The main function to perform iteratively bifurcation clustering
+#' 
+#' @param seuratObj A Seurat object
+#' @param method The method to perform bifurcation clustering "graph (default), hclust or kmeans"
+#' @param min.marker.num Minimal number of markers to confirm a bifurcation
+#' @param max.level.num Maximum number of level for bifurcation
+#' @param min.cell.count Minimal number of cells to perform bifurcation (must bigger than PC number: 50)
+#' @param res_sets The number of resolution for searching
+#' @param verbose Print detail proccessing messages
+#' 
+#' @return A list. cellMeta contains the preliminary bifurcation for each level
+#' marker_chain contains all the significant markers for each cluster
+#' bifucation contains the bifurcation details (parent, child1, child2)
+#' @export
+#' 
+RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.level.num = 20,
                        min.cell.count = 50, res_sets = 30, verbose = T) {
   # key index
   # level index: 1-20
@@ -11,8 +29,8 @@ run.iterbi <- function(seuset, method = "graph", min.marker.num = 100, max.level
   # min.cell.count <- 50 # must be more than number PCs
   # verbose <- T
   # key file 1: the cell annotation dataframe
-  seuset$cellName <- as.character(colnames(seuset))
-  iterbi.cellMeta <- data.frame(row.names = seuset$cellName, cellName=seuset$cellName, stringsAsFactors = F)
+  seuratObj$cellName <- as.character(colnames(seuratObj))
+  iterbi.cellMeta <- data.frame(row.names = seuratObj$cellName, cellName=seuratObj$cellName, stringsAsFactors = F)
   # add initial one
   iterbi.cellMeta[,"L0"] <- 1
   # add default L1-max.level.num
@@ -60,19 +78,19 @@ run.iterbi <- function(seuset, method = "graph", min.marker.num = 100, max.level
       # binary clustering
       # message(length(tmp.cells))
       # subset funciton have problem
-      tmp <- rep(F, ncol(seuset))
-      names(tmp) <- colnames(seuset)
+      tmp <- rep(F, ncol(seuratObj))
+      names(tmp) <- colnames(seuratObj)
       tmp[tmp.cells] <- T
-      seuset$select_cells <- factor(tmp, levels = c(T, F))
-      tmp.seuset <- subset(seuset, subset = select_cells == T)
-      # tmp.seuset <- subset(seuset, subset = cellName %in% tmp.cells) # can't find tmp.cells, don't know why?
+      seuratObj$select_cells <- factor(tmp, levels = c(T, F))
+      tmp.seuratObj <- subset(seuratObj, subset = select_cells == T)
+      # tmp.seuratObj <- subset(seuratObj, subset = cellName %in% tmp.cells) # can't find tmp.cells, don't know why?
       #
-      if (method == "graph") {tmp.seuset <- iterbi.bifucation.graph(tmp.seuset, res_sets = res_sets)}
-      else if (method == "hclust") {tmp.seuset <- iterbi.bifucation.hclust(tmp.seuset)}
-      else if (method == "kmeans") {tmp.seuset <- iterbi.bifucation.kmeans(tmp.seuset)}
+      if (method == "graph") {tmp.seuratObj <- IterbiBifucation.graph(tmp.seuratObj, res_sets = res_sets)}
+      else if (method == "hclust") {tmp.seuratObj <- IterbiBifucation.hclust(tmp.seuratObj)}
+      else if (method == "kmeans") {tmp.seuratObj <- IterbiBifucation.kmeans(tmp.seuratObj)}
       else {message("Please select one method in: graph, hclust, kmeans!")}
       # check clustering result
-      if (length(unique(tmp.seuset@active.ident)) != 2) {
+      if (length(unique(tmp.seuratObj@active.ident)) != 2) {
         message("Cannot do bifurcation. Set bigger res_sets!!!")
         stop()
       }
@@ -80,9 +98,9 @@ run.iterbi <- function(seuset, method = "graph", min.marker.num = 100, max.level
       next.cluster.index.1 <- paste(next.level.index, 2*j-1, sep = "_")
       next.cluster.index.2 <- paste(next.level.index, 2*j, sep = "_")
       # write annotation to the next level
-      iterbi.cellMeta[tmp.seuset$cellName, next.level.index] <- as.integer(tmp.seuset@active.ident) + 2*(j-1)
+      iterbi.cellMeta[tmp.seuratObj$cellName, next.level.index] <- as.integer(tmp.seuratObj@active.ident) + 2*(j-1)
       # get markers
-      binary_markers <- identify_binary_markers(tmp.seuset)
+      binary_markers <- IdentifyBinaryMarkers(tmp.seuratObj)
       b1.markers <- binary_markers[["b1"]]
       b2.markers <- binary_markers[["b2"]]
       # set end point
@@ -127,8 +145,16 @@ run.iterbi <- function(seuset, method = "graph", min.marker.num = 100, max.level
   return(list(cellMeta=iterbi.cellMeta, marker_chain=iterbi.marker.chain, bifucation=iterbi.bifucation))
 }
 
+#' rename the clusters inside the iterbi result
+#' 
+#' @param iterbi.result A result file from RunIterbi() function
 
-rename.iterbi <- function(iterbi.result) {
+#' @return A renamed list. cellMeta contains the final bifurcation for each level
+#' marker_chain contains all the significant markers for each cluster
+#' bifucation contains the bifurcation details (parent, child1, child2)
+#' @export
+#' 
+RenameIterbi <- function(iterbi.result) {
   # rename three files, iterbi.cellMeta is one type, iterbi.marker.chain and iterbi.bifucation are another type
   iterbi.cellMeta <- iterbi.result[["cellMeta"]]
   iterbi.marker.chain <- iterbi.result[["marker_chain"]]
@@ -187,21 +213,42 @@ rename.iterbi <- function(iterbi.result) {
   return(iterbi.result)
 }
 
-dataframe_to_vector <- function(df) {
+#' transform dataframe to vector
+#' 
+#' @param df A dataframe from Seuratobj[["attr"]]
+
+#' @return A vector with names
+#' @export
+#' 
+DataframeToVector <- function(df) {
   # transform dataframe to vector
   tmp.anno.vector <- df[,1]
   names(tmp.anno.vector) <- rownames(df)
   return(tmp.anno.vector)
 }
 
-get_unique_marker <- function(seuset, iterbi.marker.chain, assay="RNA", slot = "data") {
+#' filter uniquely expressed markers by expression percentage
+#' 
+#' @param seuratObj A Seurat object
+#' @param iterbi.marker.chain iterbi.marker.chain dataframe contains all the markers
+#' @param assay Assay used for prediction
+#' @param slot slot used for prediction
+#' @param min_cluster_pct Minimal expression percentage of target cluster
+#' @param max_bcg_pct Maximum expression percentage of the background cells (non-target cells)
+#' @param min_diff Minimal difference (expression percentage) between target cluster and background cells
+#' 
+#' @return Uniquely expressed iterbi.marker.chain
+#' @export
+#' 
+GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data", 
+                              min_cluster_pct = 0.3, max_bcg_pct = 0.1, min_diff = 0.3) {
   # rm duplicate markers from last
   iterbi.marker.chain.uniq <- remove_duplicate_marker_chain(iterbi.marker.chain)
   iterbi.marker.chain.uniq$cluster_pct <- 0
   iterbi.marker.chain.uniq$bcg_pct <- 0
   # get data
-  reference.data <- GetAssayData(object = seuset, assay = assay, slot = slot)
-  # tmp.exprMat <- as.matrix(seuset@assays$RNA@data)
+  reference.data <- GetAssayData(object = seuratObj, assay = assay, slot = slot)
+  # tmp.exprMat <- as.matrix(seuratObj@assays$RNA@data)
   for (i in 1:nrow(iterbi.marker.chain.uniq)) {
     # print(i)
     tmp.gene <- iterbi.marker.chain.uniq$gene[i]
@@ -219,12 +266,20 @@ get_unique_marker <- function(seuset, iterbi.marker.chain, assay="RNA", slot = "
     # break
   }
   # filter
-  iterbi.marker.chain.uniq <- subset(iterbi.marker.chain.uniq, cluster_pct-bcg_pct>0.3)
+  iterbi.marker.chain.uniq <- subset(iterbi.marker.chain.uniq, (cluster_pct-bcg_pct)>0.3 && cluster_pct>min_cluster_pct && bcg_pct<max_bcg_pct)
   #
   return(iterbi.marker.chain.uniq)
 }
 
-remove_duplicated_GO <- function(tmp.GO.df, max.overlap=0.6) {
+#' remove duplicated GO terms based on overlaps of genes
+#' 
+#' @param tmp.GO.df GO annotation dataframe from clusterProfiler package
+#' @param max.overlap Maximum overlapped percentage of genes
+#'
+#' @return GO annotation dataframe without duplications
+#' @export
+#' 
+RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
   # remove duplicated GO
   remain.GOterms <- c()
   # remove duplicate GO or KEGG terms
@@ -240,7 +295,17 @@ remove_duplicated_GO <- function(tmp.GO.df, max.overlap=0.6) {
   return(tmp.GO.df[remain.GOterms,])
 }
 
-iterbi_GO_annotation <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 5) {
+#' Perform GO annotation of iterbi.marker.chain dataframe
+#' 
+#' @param iterbi.marker.chain terbi.marker.chain dataframe contains all the markers
+#' @param organism "hs" for Homo sapiens, or "mm" for Mus musculus
+#' @param pvalueCutoff cut off P-value for GO annotations
+#' @param min_count Minimal count of genes for GO annotations
+#'
+#' @return GO annotation dataframe labeled with cluster
+#' @export
+#' 
+IterbiEnrichGO <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 5) {
   marker.list <- list()
   for (i in unique(iterbi.marker.chain$new_cluster)) {
     # print(i)
@@ -248,7 +313,7 @@ iterbi_GO_annotation <- function(iterbi.marker.chain, organism="hs", pvalueCutof
     marker.list[[i]] <- tmp.marker.df$gene
   }
   #
-  iterbi.GO.anno <- ora.go.kegg.clusterProfiler(geneList = marker.list, organism=organism)
+  iterbi.GO.anno <- clusterProfilerORA(geneList = marker.list, organism=organism)
   #
   iterbi.GO.anno.filtered <- data.frame()
   for (i in names(iterbi.GO.anno$go_list)) {
@@ -256,7 +321,7 @@ iterbi_GO_annotation <- function(iterbi.marker.chain, organism="hs", pvalueCutof
     tmp.GO.df <- iterbi.GO.anno$go_list[[i]]@result
     tmp.GO.df <- subset(tmp.GO.df, pvalue<pvalueCutoff & p.adjust<pvalueCutoff & qvalue<pvalueCutoff & Count>min_count)
     if (nrow(tmp.GO.df)<1) next
-    tmp.GO.df <- remove_duplicated_GO(tmp.GO.df)
+    tmp.GO.df <- RemoveDuplicatedGO(tmp.GO.df)
     tmp.GO.df$cluster <- i
     iterbi.GO.anno.filtered <- rbind(iterbi.GO.anno.filtered, tmp.GO.df)
     # break
@@ -264,16 +329,14 @@ iterbi_GO_annotation <- function(iterbi.marker.chain, organism="hs", pvalueCutof
   return(iterbi.GO.anno.filtered)
 }
 
-#' GO KEGG ORA analysis
+#' GO KEGG ORA analysis by clusterProfiler
 #' @param geneList a gene list
-#' @param organism organism (hs and mm)
+#' @param organism "hs" for Homo sapiens, or "mm" for Mus musculus
 #'
 #' @return a list with GO and KEGG annotation result (clusterProfiler format)
 #' @export
-#' @examples
-#' result <- ora.go.kegg.clusterProfiler(geneList = new_moduleList, organism="mm")
 #'
-ora.go.kegg.clusterProfiler <- function(geneList=markerList, organism="hs") {
+clusterProfilerORA <- function(geneList=markerList, organism="hs") {
   library(clusterProfiler)
   go_list <- list()
   kegg_list <- list()
@@ -333,18 +396,37 @@ ora.go.kegg.clusterProfiler <- function(geneList=markerList, organism="hs") {
     return(list("go_list"=go_list, "kegg_list"=kegg_list))
 }
 
-subset_seuratObj_bycells <- function(seuset, tmp.cells) {
+#' Subset seurat object by cell names
+#' 
+#' @param seuratObj A Seurat object
+#' @param tmp.cells cells for subseting
+#'
+#' @return A subset of seurat object
+#' @export
+#' 
+subsetSeuratObj <- function(seuratObj, tmp.cells) {
   # tmp.cells <- rownames(tmp.iterbi.cellMeta.3)
-  tmp <- rep(F, ncol(seuset))
-  names(tmp) <- colnames(seuset)
+  tmp <- rep(F, ncol(seuratObj))
+  names(tmp) <- colnames(seuratObj)
   tmp[tmp.cells] <- T
-  seuset$select_cells <- factor(tmp, levels = c(T, F))
-  tmp.seuset <- subset(seuset, subset = select_cells == T)
-  if (sum(colnames(tmp.seuset)!=names((tmp.seuset@active.ident))) != 0) stop("colnames in seuratObj and active.ident not match")
-  return(tmp.seuset)
+  seuratObj$select_cells <- factor(tmp, levels = c(T, F))
+  tmp.seuratObj <- subset(seuratObj, subset = select_cells == T)
+  if (sum(colnames(tmp.seuratObj)!=names((tmp.seuratObj@active.ident))) != 0) stop("colnames in seuratObj and active.ident not match")
+  return(tmp.seuratObj)
 }
 
-get_initial_bifurcation_of_two_clusters <- function(iterbi.cellMeta, cluster_1, cluster_2, balance_cells=T) {
+#' Find initial bifurcation event of any two clusters in iterbi.cellMeta
+#' 
+#' @param iterbi.cellMeta iterbi.cellMeta from iterbi
+#' @param cluster_1 cluster 1
+#' @param cluster_2 cluster 2
+#' @param balance_cells output balanced cell number (T or F)
+#'
+#' @return A list. subset_seuratObj is the subset cells in cluster 1 and cluster 2
+#' diff_marker_1 is the marker of cluster 1, diff_marker_2 is the marker of cluster 2
+#' @export
+#' 
+GetInitialBifurcation <- function(iterbi.cellMeta, cluster_1, cluster_2, balance_cells=T) {
   # input any two cluster, trace back to the initial bifurcation event
   level_1 <- strsplit(cluster_1, split = "_")[[1]][1]
   cluster_1.index <- as.numeric(strsplit(cluster_1, split = "_")[[1]][2])
@@ -381,25 +463,25 @@ get_initial_bifurcation_of_two_clusters <- function(iterbi.cellMeta, cluster_1, 
     diff_marker_1 <- subset(iterbi.marker.chain, new_cluster==paste(alreay.bifucation.level, ancestor.cluster_1, sep = "_"))
     diff_marker_2 <- subset(iterbi.marker.chain, new_cluster==paste(alreay.bifucation.level, ancestor.cluster_2, sep = "_"))
     # get subset seuratObj
-    tmp.seuset <- subset_seuratObj_bycells(seuset, rownames(tmp.iterbi.cellMeta.3))
+    tmp.seuratObj <- subsetSeuratObj(seuratObj, rownames(tmp.iterbi.cellMeta.3))
     tmp.iterbi.cellMeta.3$merged_cluster <- paste(level_2, tmp.iterbi.cellMeta.3[,level_2], sep = "_")
     tmp.iterbi.cellMeta.3[tmp.iterbi.cellMeta.3[,level_1]==cluster_1.index, "merged_cluster"] <- paste(level_1, tmp.iterbi.cellMeta.3[tmp.iterbi.cellMeta.3[,level_1]==cluster_1.index, level_1], sep = "_")
     # set merged cluster name
-    tmp.ident <- tmp.iterbi.cellMeta.3[colnames(tmp.seuset),]$merged_cluster
-    names(tmp.ident) <- colnames(tmp.seuset)
+    tmp.ident <- tmp.iterbi.cellMeta.3[colnames(tmp.seuratObj),]$merged_cluster
+    names(tmp.ident) <- colnames(tmp.seuratObj)
     tmp.ident <- factor(tmp.ident, levels = c(cluster_1, cluster_2))
-    tmp.seuset@active.ident <- tmp.ident
+    tmp.seuratObj@active.ident <- tmp.ident
     #
     if (balance_cells) {
       # balance cell number
       set.seed(49)
-      cell_number_table <- table(tmp.seuset@active.ident)
-      cell.1 <- sample(colnames(tmp.seuset)[as.character(tmp.seuset@active.ident)==names(cell_number_table)[1]], size = min(cell_number_table))
-      cell.2 <- sample(colnames(tmp.seuset)[as.character(tmp.seuset@active.ident)==names(cell_number_table)[2]], size = min(cell_number_table))
-      tmp.seuset <- subset_seuratObj_bycells(tmp.seuset, c(cell.1, cell.2))
+      cell_number_table <- table(tmp.seuratObj@active.ident)
+      cell.1 <- sample(colnames(tmp.seuratObj)[as.character(tmp.seuratObj@active.ident)==names(cell_number_table)[1]], size = min(cell_number_table))
+      cell.2 <- sample(colnames(tmp.seuratObj)[as.character(tmp.seuratObj@active.ident)==names(cell_number_table)[2]], size = min(cell_number_table))
+      tmp.seuratObj <- subsetSeuratObj(tmp.seuratObj, c(cell.1, cell.2))
 
     }
-    return(list(subset_seuratObj=tmp.seuset, diff_marker_1=diff_marker_1, diff_marker_2=diff_marker_2))
+    return(list(subset_seuratObj=tmp.seuratObj, diff_marker_1=diff_marker_1, diff_marker_2=diff_marker_2))
   }
 }
 
