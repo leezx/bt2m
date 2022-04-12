@@ -2,8 +2,7 @@
 # Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 globalVariables(
-  names=c("Count","Description","avg_logFC","bcg_pct","cluster","cluster_pct","correlation","iterbi.cellMeta","iterbi.marker.chain","markerList",
-          "new_cluster","old_cluster","p_val","p_val_adj","pvalue","qvalue","select_cells","seuratObj"),
+  names=c("Count","Description","avg_logFC","bcg_pct","cluster","cluster_pct","correlation","iterbi.cellMeta","iterbi.marker.chain","markerList","new_cluster","old_cluster","p_val","p_val_adj","pvalue","qvalue","select_cells","seuratObj"),
   package = "iterbi",
   add = TRUE
 )
@@ -315,7 +314,7 @@ IterbiEnrichGO <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.
   marker.list <- list()
   for (i in unique(iterbi.marker.chain$cluster)) {
     # print(i)
-    tmp.marker.df <- subset(iterbi.marker.chain, new_cluster==i)
+    tmp.marker.df <- subset(iterbi.marker.chain, cluster==i)
     marker.list[[i]] <- tmp.marker.df$gene
   }
   #
@@ -467,8 +466,8 @@ GetInitialBifurcation <- function(seuratObj, iterbi.cellMeta, cluster_1, cluster
     #
     Non.split.ancestor.cluster <- tmp.iterbi.cellMeta.3[tmp.iterbi.cellMeta.3[,level_1]==cluster_1.index,][1,None.bifucation.level]
     # get the first bifurcation markers
-    diff_marker_1 <- subset(iterbi.marker.chain, new_cluster==paste(alreay.bifucation.level, ancestor.cluster_1, sep = "_"))
-    diff_marker_2 <- subset(iterbi.marker.chain, new_cluster==paste(alreay.bifucation.level, ancestor.cluster_2, sep = "_"))
+    diff_marker_1 <- subset(iterbi.marker.chain, cluster==paste(alreay.bifucation.level, ancestor.cluster_1, sep = "_"))
+    diff_marker_2 <- subset(iterbi.marker.chain, cluster==paste(alreay.bifucation.level, ancestor.cluster_2, sep = "_"))
     # get subset seuratObj
     tmp.seuratObj <- subsetSeuratObj(seuratObj, rownames(tmp.iterbi.cellMeta.3))
     tmp.iterbi.cellMeta.3$merged_cluster <- paste(level_2, tmp.iterbi.cellMeta.3[,level_2], sep = "_")
@@ -517,6 +516,49 @@ GetClusterChain <- function(iterbi.cellMeta, iterbi.bifucation, target.cluster) 
     return(node_attr)
 }
 
+#' Write iterbi result to Seurat object
+#'
+#' @param seuratObj A Seurat object
+#' @param iterbi.result iterbi.result
+#'
+#' @return A Seurat object contains iterbi.result. iterbi will be stored in assay data region of Seurat object ("seuratObj@assays$iterbi")
+#' @export
+#'
+WriteIterbiIntoSeurat <- function(seuratObj, iterbi.result) {
+  # get results
+  iterbi.cellMeta <- iterbi.result[["cellMeta"]]
+  iterbi.marker.chain <- iterbi.result[["marker_chain"]]
+  iterbi.bifucation <- iterbi.result[["bifucation"]]
+  # input L-data to seurat
+  for (i in colnames(iterbi.cellMeta)) {
+    # print(i)
+    tmp.ident <- iterbi.cellMeta[,i]
+    names(tmp.ident) <- rownames(iterbi.cellMeta)
+    tmp.ident <- factor(tmp.ident, levels = sort(unique(tmp.ident)))
+    seuratObj[[i]] <- tmp.ident
+  }
+  #iterbi.cellMeta <- iterbi.result[["cellMeta"]]
+  #iterbi.marker.chain <- iterbi.result[["marker_chain"]]
+  #iterbi.bifucation <- iterbi.result[["bifucation"]]
+  seuratObj@assays$iterbi <- iterbi.result
+  return(seuratObj)
+}
 
-
-
+#' Remove duplicated markers from last level
+#'
+#' @param iterbi.marker.chain iterbi.marker.chain from iterbi
+#'
+#' @return iterbi.marker.chain without duplicated genes
+#' @export
+#'
+RemoveDuplicatedMarker <- function(iterbi.marker.chain, method = "correlation") {
+  if (method == "level") {
+    iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = T),]
+    } else if (method == "correlation") {
+      iterbi.marker.chain <- iterbi.marker.chain[order(iterbi.marker.chain$correlation, decreasing = T),]
+      iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = F),]
+    } else {
+      message("Please input correct method!")
+    }
+  return(iterbi.marker.chain.uniq)
+}

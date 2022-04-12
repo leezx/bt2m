@@ -18,13 +18,13 @@ PrepareExpressionMatrix <- function(seuratObj, iterbi.marker.chain, assay="RNA",
   reference.data <- GetAssayData(object = seuratObj, assay = assay, slot = slot)
   if (is.null(reference.data)) stop("Data not exist. Please input right assay and slot!!!")
   all.exprMat <- data.frame()
-  for (i in unique(iterbi.marker.chain$new_cluster)) {
-    tmp.module <- subset(iterbi.marker.chain, new_cluster==i)$gene
+  for (i in unique(iterbi.marker.chain$cluster)) {
+    tmp.module <- subset(iterbi.marker.chain, cluster==i)$gene
     tmp.exprMat <- colMeans(reference.data[tmp.module,])
     all.exprMat <- rbind(all.exprMat, tmp.exprMat)
     # break
   }
-  rownames(all.exprMat) <- unique(iterbi.marker.chain$new_cluster)
+  rownames(all.exprMat) <- unique(iterbi.marker.chain$cluster)
   colnames(all.exprMat) <- colnames(reference.data)
   # gene for validation
   if (length(known_markers)>1) {
@@ -107,30 +107,6 @@ DrawMarkerChainHeatmap <- function(seuratObj, iterbi.cellMeta, iterbi.marker.cha
   return(ht)
 }
 
-#' Write iterbi result to Seurat object
-#'
-#' @param seuratObj A Seurat object
-#' @param iterbi.result iterbi.result
-#'
-#' @return A Seurat object contains iterbi.result. iterbi will be stored in assay data region of Seurat object ("seuratObj@assays$iterbi")
-#' @export
-#'
-WriteIterbiIntoSeurat <- function(seuratObj, iterbi.result) {
-  # input L-data to seurat
-  for (i in colnames(iterbi.cellMeta)) {
-    # print(i)
-    tmp.ident <- iterbi.cellMeta[,i]
-    names(tmp.ident) <- rownames(iterbi.cellMeta)
-    tmp.ident <- factor(tmp.ident, levels = sort(unique(tmp.ident)))
-    seuratObj[[i]] <- tmp.ident
-  }
-  #iterbi.cellMeta <- iterbi.result[["cellMeta"]]
-  #iterbi.marker.chain <- iterbi.result[["marker_chain"]]
-  #iterbi.bifucation <- iterbi.result[["bifucation"]]
-  seuratObj@assays$iterbi <- iterbi.result
-  return(seuratObj)
-}
-
 #' Draw cluster tree/chain by clustree
 #'
 #' @param seuratObj A Seurat object
@@ -155,25 +131,6 @@ DrawIterbiClusterTree <- function(seuratObj, iterbi.cellMeta, node_text_size=7, 
   return(tree)
 }
 
-#' Remove duplicated markers from last level
-#'
-#' @param iterbi.marker.chain iterbi.marker.chain from iterbi
-#'
-#' @return iterbi.marker.chain without duplicated genes
-#' @export
-#'
-RemoveDuplicatedMarker <- function(iterbi.marker.chain, method = "correlation") {
-  if (method == "level") {
-    iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = T),]
-    } else if (method == "correlation") {
-      iterbi.marker.chain <- iterbi.marker.chain[order(iterbi.marker.chain$correlation, decreasing = T),]
-      iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = F),]
-    } else {
-      message("Please input correct method!")
-    }
-  return(iterbi.marker.chain.uniq)
-}
-
 #' Draw cluster tree/chain by clustree
 #'
 #' @param seuratObj A Seurat object
@@ -195,7 +152,7 @@ DrawMarkerChainDotplot <- function(seuratObj, iterbi.marker.chain, rmDup=T, top_
   seuratObj@active.ident <- DataframeToVector(seuratObj[[check_level]])
   #
   top <- subset(iterbi.marker.chain.rmDup) %>%
-    group_by(new_cluster) %>%
+    group_by(cluster) %>%
     dplyr::top_n(top_n, abs(correlation))
   p1 <- DrawIterbiClusterTree(seuratObj, iterbi.cellMeta)
   p2 <- DotPlot(seuratObj, features = rev(top$gene), dot.scale = 7) + RotatedAxis() + ylab(NULL) + xlab(NULL)
