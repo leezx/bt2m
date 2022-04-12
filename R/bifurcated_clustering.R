@@ -4,16 +4,16 @@
 #' Find the best resolution for bifurcation in graph-based clustering
 #'
 #' @param seuratObj A Seurat object
-#' @param res_sets The number of resolution for searching
+#' @param resolution.sets The number of resolution for searching
 #'
 #' @return The best resolution which can bifurcate all cells
 #' @export
 #'
-FindBifurcationResolution <- function(seuratObj, res_sets = 50) {
+FindBifurcationResolution <- function(seuratObj, resolution.sets = 50) {
   # 二分查找
   optimal_resolution <- 0
   # 顺序or倒序
-  for (resolution in seq(0,1,length.out = res_sets)) {
+  for (resolution in seq(0,1,length.out = resolution.sets)) {
     # 从小到大搜索到第一个cluster_number>1的resolution，0到多的一个区间
     seuratObj <- FindClusters(seuratObj, resolution = resolution, verbose = F)
     cluster_number <- length(unique(seuratObj@active.ident))
@@ -21,8 +21,8 @@ FindBifurcationResolution <- function(seuratObj, res_sets = 50) {
       # 倒序搜索到第一个
       # must use log order for graph method to do bifurcation, 0.1 may have 3 clusters
       # log divide the interval to make sure we can find the bifurcated resolution parameter
-      # for (j in seq(resolution-0.1, resolution, length.out = res_sets)) {
-      logseq <- c(1/(res_sets-1) %o% 2^(0:res_sets)) + resolution - 1/(res_sets-1)
+      # for (j in seq(resolution-0.1, resolution, length.out = resolution.sets)) {
+      logseq <- c(1/(resolution.sets-1) %o% 2^(0:resolution.sets)) + resolution - 1/(resolution.sets-1)
       # 从大到小搜寻第一个等于2的
       for (j in logseq) {
         seuratObj <- FindClusters(seuratObj, resolution = j, verbose = F)
@@ -41,19 +41,19 @@ FindBifurcationResolution <- function(seuratObj, res_sets = 50) {
 #' Bifurcation based on graph-based clustering
 #'
 #' @param seuratObj A Seurat object
-#' @param res_sets The number of resolution for searching
+#' @param resolution.sets The number of resolution for searching
 #'
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
 #'
-IterbiBifucation.graph <- function(seuratObj, res_sets = 50) {
+IterbiBifucation.graph <- function(seuratObj, resolution.sets = 50) {
   # run PCA and SNN
   #message("run IterbiBifucation.graph...")
   #message(paste("Processing ", nrow(seuratObj)," gene and ", ncol(seuratObj), " cells", sep = ""))
   seuratObj <- RunPCA(seuratObj, verbose = F)
   seuratObj <- FindNeighbors(seuratObj, dims = 1:10, verbose = F)
   # get optimal resolution
-  optimal_resolution <- FindBifurcationResolution(seuratObj, res_sets = res_sets)
+  optimal_resolution <- FindBifurcationResolution(seuratObj, resolution.sets = resolution.sets)
   seuratObj <- FindClusters(seuratObj, resolution = optimal_resolution, verbose = F)
   return(seuratObj)
 }

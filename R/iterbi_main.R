@@ -14,7 +14,7 @@ globalVariables(
 #' @param min.marker.num Minimal number of markers to confirm a bifurcation
 #' @param max.level.num Maximum number of level for bifurcation
 #' @param min.cell.count Minimal number of cells to perform bifurcation (must bigger than PC number: 50)
-#' @param res_sets The number of resolution for searching
+#' @param resolution.sets The number of resolution for searching
 #' @param verbose Print detail proccessing messages
 #'
 #' @return A list. cellMeta contains the preliminary bifurcation for each level
@@ -23,7 +23,7 @@ globalVariables(
 #' @export
 #'
 RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.level.num = 20,
-                       min.cell.count = 50, res_sets = 30, verbose = T) {
+                       min.cell.count = 50, resolution.sets = 30, verbose = T) {
   # key index
   # level index: 1-20
   # cluster index: L1_(1..n)
@@ -91,13 +91,13 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
       tmp.seuratObj <- subset(seuratObj, subset = select_cells == T)
       # tmp.seuratObj <- subset(seuratObj, subset = cellName %in% tmp.cells) # can't find tmp.cells, don't know why?
       #
-      if (method == "graph") {tmp.seuratObj <- IterbiBifucation.graph(tmp.seuratObj, res_sets = res_sets)}
+      if (method == "graph") {tmp.seuratObj <- IterbiBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets)}
       else if (method == "hclust") {tmp.seuratObj <- IterbiBifucation.hclust(tmp.seuratObj)}
       else if (method == "kmeans") {tmp.seuratObj <- IterbiBifucation.kmeans(tmp.seuratObj)}
       else {message("Please select one method in: graph, hclust, kmeans!")}
       # check clustering result
       if (length(unique(tmp.seuratObj@active.ident)) != 2) {
-        message("Cannot do bifurcation. Set bigger res_sets!!!")
+        message("Cannot do bifurcation. Set bigger resolution.sets!!!")
         stop()
       }
       # assign name to the marker dfs
@@ -239,15 +239,15 @@ DataframeToVector <- function(df) {
 #' @param iterbi.marker.chain iterbi.marker.chain dataframe contains all the markers
 #' @param assay Assay used for prediction
 #' @param slot slot used for prediction
-#' @param min_cluster_pct Minimal expression percentage of target cluster
-#' @param max_bcg_pct Maximum expression percentage of the background cells (non-target cells)
-#' @param min_diff Minimal difference (expression percentage) between target cluster and background cells
+#' @param min.cluster.pct Minimal expression percentage of target cluster
+#' @param max.bcg.pct Maximum expression percentage of the background cells (non-target cells)
+#' @param min.diff Minimal difference (expression percentage) between target cluster and background cells
 #'
 #' @return Uniquely expressed iterbi.marker.chain
 #' @export
 #'
 GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data",
-                              min_cluster_pct = 0.3, max_bcg_pct = 0.1, min_diff = 0.3) {
+                              min.cluster.pct = 0.3, max.bcg.pct = 0.1, min.diff = 0.3) {
   # rm duplicate markers from last
   iterbi.marker.chain.uniq <- RemoveDuplicatedMarker(iterbi.marker.chain)
   iterbi.marker.chain.uniq$cluster_pct <- 0
@@ -272,7 +272,7 @@ GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot 
     # break
   }
   # filter
-  iterbi.marker.chain.uniq <- subset(iterbi.marker.chain.uniq, (cluster_pct-bcg_pct)>0.3 && cluster_pct>min_cluster_pct && bcg_pct<max_bcg_pct)
+  iterbi.marker.chain.uniq <- subset(iterbi.marker.chain.uniq, (cluster_pct-bcg_pct)>0.3 && cluster_pct>min.cluster.pct && bcg_pct<max.bcg.pct)
   #
   return(iterbi.marker.chain.uniq)
 }
