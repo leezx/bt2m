@@ -111,12 +111,12 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
       b2.markers <- binary_markers[["b2"]]
       # set end point
       if (nrow(b1.markers) >= min.marker.num) {
-        b1.markers$split <- tmp.cluster.index
+        b1.markers$parent <- tmp.cluster.index
         b1.markers$cluster <- next.cluster.index.1
         iterbi.marker.chain <- rbind(iterbi.marker.chain, b1.markers)
       }
       if (nrow(b2.markers) >= min.marker.num) {
-        b2.markers$split <- tmp.cluster.index
+        b2.markers$parent <- tmp.cluster.index
         b2.markers$cluster <- next.cluster.index.2
         iterbi.marker.chain <- rbind(iterbi.marker.chain, b2.markers)
       }
@@ -189,10 +189,10 @@ RenameIterbi <- function(iterbi.result) {
   #
   all.map.df.NoEnd <- subset(all.map.df, !grepl("end", old_cluster))
   # these two files don't invovle end-node
-  iterbi.marker.chain$new_cluster <- plyr::mapvalues(iterbi.marker.chain$cluster,
+  iterbi.marker.chain$cluster <- plyr::mapvalues(iterbi.marker.chain$cluster,
                                                       from = all.map.df.NoEnd$old_cluster_prefix,
                                                       to = all.map.df.NoEnd$new_cluster_full)
-  iterbi.marker.chain$split_new <- plyr::mapvalues(iterbi.marker.chain$split,
+  iterbi.marker.chain$parent <- plyr::mapvalues(iterbi.marker.chain$parent,
                                                     from = all.map.df.NoEnd$old_cluster_prefix,
                                                     to = all.map.df.NoEnd$new_cluster_full)
   #
@@ -258,7 +258,7 @@ GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot 
   for (i in 1:nrow(iterbi.marker.chain.uniq)) {
     # print(i)
     tmp.gene <- iterbi.marker.chain.uniq$gene[i]
-    tmp.cluster <- iterbi.marker.chain.uniq$new_cluster[i]
+    tmp.cluster <- iterbi.marker.chain.uniq$cluster[i]
     tmp.level <- strsplit(tmp.cluster, split = "_")[[1]][1]
     tmp.cluster.index <- as.numeric(strsplit(tmp.cluster, split = "_")[[1]][2])
     tmp.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,] )
@@ -313,7 +313,7 @@ RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
 #'
 IterbiEnrichGO <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 5) {
   marker.list <- list()
-  for (i in unique(iterbi.marker.chain$new_cluster)) {
+  for (i in unique(iterbi.marker.chain$cluster)) {
     # print(i)
     tmp.marker.df <- subset(iterbi.marker.chain, new_cluster==i)
     marker.list[[i]] <- tmp.marker.df$gene
@@ -423,6 +423,7 @@ subsetSeuratObj <- function(seuratObj, tmp.cells) {
 
 #' Find initial bifurcation event of any two clusters in iterbi.cellMeta
 #'
+#' @param seuratObj A Seurat object
 #' @param iterbi.cellMeta iterbi.cellMeta from iterbi
 #' @param cluster_1 cluster 1
 #' @param cluster_2 cluster 2
@@ -432,7 +433,7 @@ subsetSeuratObj <- function(seuratObj, tmp.cells) {
 #' diff_marker_1 is the marker of cluster 1, diff_marker_2 is the marker of cluster 2
 #' @export
 #'
-GetInitialBifurcation <- function(iterbi.cellMeta, cluster_1, cluster_2, balance_cells=T) {
+GetInitialBifurcation <- function(seuratObj, iterbi.cellMeta, cluster_1, cluster_2, balance_cells=T) {
   # input any two cluster, trace back to the initial bifurcation event
   level_1 <- strsplit(cluster_1, split = "_")[[1]][1]
   cluster_1.index <- as.numeric(strsplit(cluster_1, split = "_")[[1]][2])
@@ -491,7 +492,30 @@ GetInitialBifurcation <- function(iterbi.cellMeta, cluster_1, cluster_2, balance
   }
 }
 
-
+#' Find the cluster chain of any given cluster
+#'
+#' @param iterbi.cellMeta iterbi.cellMeta from iterbi
+#' @param iterbi.bifucation iterbi.bifucation from iterbi
+#' @param target.cluster target cluster
+#'
+#' @return A vector, names are cluster name, element shows the states of clusters
+#' @export
+#'
+GetClusterChain <- function(iterbi.cellMeta, iterbi.bifucation, target.cluster) {
+    tmp.level <- strsplit(target.cluster, split = "_")[[1]][1]
+    tmp.level.index <- as.numeric(substr(tmp.level, 2, 10))
+    tmp.cluster.index <- as.numeric(strsplit(target.cluster, split = "_")[[1]][2])
+    if (!(tmp.level %in% colnames(iterbi.cellMeta)) || !(tmp.cluster.index %in% iterbi.cellMeta[,tmp.level])) {
+        message("Please input correct target.cluster!!!")
+    } else {
+        cluster.chain <- paste(colnames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,]), 
+                               iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,][1,], sep = "_")
+    }
+    # node attribute
+    node_attr <- c("End_node","Parent_node")[as.integer(cluster.chain %in% unlist(iterbi.bifucation))+1]
+    names(node_attr) <- cluster.chain
+    return(node_attr)
+}
 
 
 

@@ -162,8 +162,15 @@ DrawIterbiClusterTree <- function(seuratObj, iterbi.cellMeta, node_text_size=7, 
 #' @return iterbi.marker.chain without duplicated genes
 #' @export
 #'
-RemoveDuplicatedMarker <- function(iterbi.marker.chain) {
-  iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = T),]
+RemoveDuplicatedMarker <- function(iterbi.marker.chain, method = "correlation") {
+  if (method == "level") {
+    iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = T),]
+    } else if (method == "correlation") {
+      iterbi.marker.chain <- iterbi.marker.chain[order(iterbi.marker.chain$correlation, decreasing = T),]
+      iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = F),]
+    } else {
+      message("Please input correct method!")
+    }
   return(iterbi.marker.chain.uniq)
 }
 
@@ -189,7 +196,7 @@ DrawMarkerChainDotplot <- function(seuratObj, iterbi.marker.chain, rmDup=T, top_
   #
   top <- subset(iterbi.marker.chain.rmDup) %>%
     group_by(new_cluster) %>%
-    top_n(top_n, abs(correlation))
+    dplyr::top_n(top_n, abs(correlation))
   p1 <- DrawIterbiClusterTree(seuratObj, iterbi.cellMeta)
   p2 <- DotPlot(seuratObj, features = rev(top$gene), dot.scale = 7) + RotatedAxis() + ylab(NULL) + xlab(NULL)
   left.anno <- cowplot::plot_grid(NULL,p1,NULL,ncol = 1, rel_heights = rel_heights)

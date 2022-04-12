@@ -19,6 +19,8 @@ IdentifyBinaryMarkers <- function(seuratObj, p_value=0.01, min_avg_logFC=0.1, mi
   # reversed the avg_logFC, set group 1 as control (base-line)
   tmp.markers$avg_logFC <- -tmp.markers$avg_logFC
   tmp.markers$gene <- rownames(tmp.markers)
+  tmp.markers$`pct.1` <- NULL
+  tmp.markers$`pct.2` <- NULL
   # add correlation
   pseudo.phenotype <- plyr::mapvalues(as.integer(seuratObj@active.ident), from = 1:2, to = c(-1,1))
   corMat <- cor(t(as.matrix(seuratObj@assays$RNA@data)), pseudo.phenotype)
