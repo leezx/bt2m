@@ -8,7 +8,7 @@ IterbiEnrichGO(
   iterbi.marker.chain,
   organism = "hs",
   pvalueCutoff = 0.05,
-  min_count = 5
+  min_count = 3
 )
 }
 \arguments{

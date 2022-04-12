@@ -238,15 +238,11 @@ DataframeToVector <- function(df) {
 #' @param iterbi.marker.chain iterbi.marker.chain dataframe contains all the markers
 #' @param assay Assay used for prediction
 #' @param slot slot used for prediction
-#' @param min.cluster.pct Minimal expression percentage of target cluster
-#' @param max.bcg.pct Maximum expression percentage of the background cells (non-target cells)
-#' @param min.diff Minimal difference (expression percentage) between target cluster and background cells
 #'
-#' @return Uniquely expressed iterbi.marker.chain
+#' @return A new dataframe with two additional columns: cluster_pct (expression percentage in the cluster) and bcg_pct (expression percentage in the background cells)
 #' @export
 #'
-GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data",
-                              min.cluster.pct = 0.3, max.bcg.pct = 0.1, min.diff = 0.3) {
+AddMarkerExpressionPct <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data") {
   # rm duplicate markers from last
   iterbi.marker.chain.uniq <- RemoveDuplicatedMarker(iterbi.marker.chain)
   iterbi.marker.chain.uniq$cluster_pct <- 0
@@ -254,24 +250,40 @@ GetUniqueMarker <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot 
   # get data
   reference.data <- GetAssayData(object = seuratObj, assay = assay, slot = slot)
   # tmp.exprMat <- as.matrix(seuratObj@assays$RNA@data)
-  for (i in 1:nrow(iterbi.marker.chain.uniq)) {
-    # print(i)
-    tmp.gene <- iterbi.marker.chain.uniq$gene[i]
-    tmp.cluster <- iterbi.marker.chain.uniq$cluster[i]
-    tmp.level <- strsplit(tmp.cluster, split = "_")[[1]][1]
-    tmp.cluster.index <- as.numeric(strsplit(tmp.cluster, split = "_")[[1]][2])
-    tmp.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,] )
-    bcg.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]!=tmp.cluster.index,] )
-    tmp.gene.expression <- reference.data[tmp.gene,tmp.cells]
-    bcg.gene.expression <- reference.data[tmp.gene,bcg.cells]
-    tmp.cluster.pct <- sum(tmp.gene.expression>0.1) / length(tmp.gene.expression)
-    tmp.background.pct <- sum(bcg.gene.expression>0.1) / length(bcg.gene.expression)
-    iterbi.marker.chain.uniq[i,"cluster_pct"] <- tmp.cluster.pct
-    iterbi.marker.chain.uniq[i,"bcg_pct"] <- tmp.background.pct
-    # break
+  # too slow!!!
+  # for (i in 1:nrow(iterbi.marker.chain.uniq)) {
+  #   # print(i)
+  #   tmp.gene <- iterbi.marker.chain.uniq$gene[i]
+  #   tmp.cluster <- iterbi.marker.chain.uniq$cluster[i]
+  #   tmp.level <- strsplit(tmp.cluster, split = "_")[[1]][1]
+  #   tmp.cluster.index <- as.numeric(strsplit(tmp.cluster, split = "_")[[1]][2])
+  #   tmp.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,] )
+  #   bcg.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]!=tmp.cluster.index,] )
+  #   tmp.gene.expression <- reference.data[tmp.gene,tmp.cells]
+  #   bcg.gene.expression <- reference.data[tmp.gene,bcg.cells]
+  #   tmp.cluster.pct <- sum(tmp.gene.expression>0.1) / length(tmp.gene.expression)
+  #   tmp.background.pct <- sum(bcg.gene.expression>0.1) / length(bcg.gene.expression)
+  #   iterbi.marker.chain.uniq[i,"cluster_pct"] <- tmp.cluster.pct
+  #   iterbi.marker.chain.uniq[i,"bcg_pct"] <- tmp.background.pct
+  #   # break
+  # }
+  # to reduce the computation cost, must do it cluster by cluster
+  for (tmp.cluster in unique(iterbi.marker.chain.uniq$cluster)) {
+      # print(i)
+      tmp.df <- subset(iterbi.marker.chain.uniq, cluster==tmp.cluster)
+      tmp.level <- strsplit(tmp.cluster, split = "_")[[1]][1]
+      tmp.cluster.index <- as.numeric(strsplit(tmp.cluster, split = "_")[[1]][2])
+      tmp.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,] )
+      bcg.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]!=tmp.cluster.index,] )
+      tmp.expression <- reference.data[,tmp.cells]
+      bcg.expression <- reference.data[,bcg.cells]
+      tmp.cluster.pct <- rowSums(as.matrix(tmp.expression>0)) / ncol(tmp.expression)
+      tmp.background.pct <- rowSums(as.matrix(bcg.expression>0)) / ncol(bcg.expression)
+      # write to df
+      iterbi.marker.chain.uniq[iterbi.marker.chain.uniq$gene %in% tmp.df$gene & iterbi.marker.chain.uniq$cluster==tmp.cluster,]$cluster_pct <- tmp.cluster.pct[tmp.df$gene]
+      iterbi.marker.chain.uniq[iterbi.marker.chain.uniq$gene %in% tmp.df$gene & iterbi.marker.chain.uniq$cluster==tmp.cluster,]$bcg_pct <- tmp.background.pct[tmp.df$gene]
+      # break
   }
-  # filter
-  iterbi.marker.chain.uniq <- subset(iterbi.marker.chain.uniq, (cluster_pct-bcg_pct)>0.3 && cluster_pct>min.cluster.pct && bcg_pct<max.bcg.pct)
   #
   return(iterbi.marker.chain.uniq)
 }
