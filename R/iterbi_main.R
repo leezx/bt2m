@@ -547,6 +547,7 @@ WriteIterbiIntoSeurat <- function(seuratObj, iterbi.result) {
 #' Remove duplicated markers from last level
 #'
 #' @param iterbi.marker.chain iterbi.marker.chain from iterbi
+#' @param method select a method to sort markers
 #'
 #' @return iterbi.marker.chain without duplicated genes
 #' @export

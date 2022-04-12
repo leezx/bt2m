@@ -4,9 +4,17 @@
 \alias{GetInitialBifurcation}
 \title{Find initial bifurcation event of any two clusters in iterbi.cellMeta}
 \usage{
-GetInitialBifurcation(iterbi.cellMeta, cluster_1, cluster_2, balance_cells = T)
+GetInitialBifurcation(
+  seuratObj,
+  iterbi.cellMeta,
+  cluster_1,
+  cluster_2,
+  balance_cells = T
+)
 }
 \arguments{
+\item{seuratObj}{A Seurat object}
+
 \item{iterbi.cellMeta}{iterbi.cellMeta from iterbi}
 
 \item{cluster_1}{cluster 1}

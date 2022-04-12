@@ -4,12 +4,12 @@
 \alias{FindBifurcationResolution}
 \title{Find the best resolution for bifurcation in graph-based clustering}
 \usage{
-FindBifurcationResolution(seuratObj, res_sets = 50)
+FindBifurcationResolution(seuratObj, resolution.sets = 50)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}
 
-\item{res_sets}{The number of resolution for searching}
+\item{resolution.sets}{The number of resolution for searching}
 }
 \value{
 The best resolution which can bifurcate all cells

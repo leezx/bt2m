@@ -9,9 +9,9 @@ GetUniqueMarker(
   iterbi.marker.chain,
   assay = "RNA",
   slot = "data",
-  min_cluster_pct = 0.3,
-  max_bcg_pct = 0.1,
-  min_diff = 0.3
+  min.cluster.pct = 0.3,
+  max.bcg.pct = 0.1,
+  min.diff = 0.3
 )
 }
 \arguments{
@@ -23,11 +23,11 @@ GetUniqueMarker(
 
 \item{slot}{slot used for prediction}
 
-\item{min_cluster_pct}{Minimal expression percentage of target cluster}
+\item{min.cluster.pct}{Minimal expression percentage of target cluster}
 
-\item{max_bcg_pct}{Maximum expression percentage of the background cells (non-target cells)}
+\item{max.bcg.pct}{Maximum expression percentage of the background cells (non-target cells)}
 
-\item{min_diff}{Minimal difference (expression percentage) between target cluster and background cells}
+\item{min.diff}{Minimal difference (expression percentage) between target cluster and background cells}
 }
 \value{
 Uniquely expressed iterbi.marker.chain

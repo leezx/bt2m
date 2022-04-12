@@ -10,7 +10,7 @@ RunIterbi(
   min.marker.num = 100,
   max.level.num = 20,
   min.cell.count = 50,
-  res_sets = 30,
+  resolution.sets = 30,
   verbose = T
 )
 }
@@ -25,7 +25,7 @@ RunIterbi(
 
 \item{min.cell.count}{Minimal number of cells to perform bifurcation (must bigger than PC number: 50)}
 
-\item{res_sets}{The number of resolution for searching}
+\item{resolution.sets}{The number of resolution for searching}
 
 \item{verbose}{Print detail proccessing messages}
 }

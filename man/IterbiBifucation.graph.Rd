@@ -4,12 +4,12 @@
 \alias{IterbiBifucation.graph}
 \title{Bifurcation based on graph-based clustering}
 \usage{
-IterbiBifucation.graph(seuratObj, res_sets = 50)
+IterbiBifucation.graph(seuratObj, resolution.sets = 50)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}
 
-\item{res_sets}{The number of resolution for searching}
+\item{resolution.sets}{The number of resolution for searching}
 }
 \value{
 A bifurcated Seurat object (see active.ident).
