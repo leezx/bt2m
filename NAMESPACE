@@ -24,6 +24,7 @@ export(RunIterbi)
 export(WriteIterbiIntoSeurat)
 export(clusterProfilerORA)
 export(subsetSeuratObj)
+export(GetClusterChain)
 
 importFrom("stats", "as.dist", "cor", "cutree", "hclust", "kmeans","p.adjust")
 importFrom("utils", "download.file", "untar")
