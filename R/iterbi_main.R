@@ -310,7 +310,7 @@ RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
 #' @return GO annotation dataframe labeled with cluster
 #' @export
 #'
-IterbiEnrichGO <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 5) {
+IterbiEnrichGO <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 3) {
   marker.list <- list()
   for (i in unique(iterbi.marker.chain$cluster)) {
     # print(i)
