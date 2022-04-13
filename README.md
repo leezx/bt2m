@@ -1,8 +1,12 @@
 # iterbi
 A iteratively bifurcated clustering method for single-cell sequencing
+
 Version: 0.4.9
+
 Depends: R(>=3.6)
+
 Import packages: stats, utils, Seurat, dplyr, clustree, ggplot2, ComplexHeatmap, RColorBrewer, circlize, fastcluster, parallelDist, HiClimR, clusterProfiler, org.Hs.eg.db, org.Mm.eg.db, Hmisc, stringr, cowplot, plyr
+
 Citation: submitted...
 
 # 1. Installation
