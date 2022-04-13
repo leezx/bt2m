@@ -2,7 +2,7 @@
 % Please edit documentation in R/iterbi_main.R
 \name{RemoveDuplicatedMarker}
 \alias{RemoveDuplicatedMarker}
-\title{Remove duplicated markers from last level}
+\title{Remove duplicated markers (just for plotting)}
 \usage{
 RemoveDuplicatedMarker(iterbi.marker.chain, method = "correlation")
 }
@@ -15,5 +15,5 @@ RemoveDuplicatedMarker(iterbi.marker.chain, method = "correlation")
 iterbi.marker.chain without duplicated genes
 }
 \description{
-Remove duplicated markers from last level
+Remove duplicated markers (just for plotting)
 }
