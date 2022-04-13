@@ -27,7 +27,7 @@ export(WriteIterbiIntoSeurat)
 export(clusterProfilerORA)
 export(subsetSeuratObj)
 
-importFrom("stats", "as.dist", "cor", "cutree", "hclust", "kmeans","p.adjust")
+importFrom("stats", "as.dist", "cor", "cutree", "hclust", "kmeans", "p.adjust", "aggregate")
 importFrom("utils", "download.file", "untar")
 
 importFrom(Seurat, DotPlot)
