@@ -50,31 +50,31 @@ iterbi.result <- OrderCluster(seuset, iterbi.result)
 iterbi.result <- RenameIterbi(iterbi.result)
 ```
 
-### step 4: add marker features
+## step 4: add marker features
 ```
 iterbi.result$marker_chain <- AddMarkerExpressionPct(seuset, iterbi.result$cellMeta, iterbi.result$marker_chain)
 ```
 
-### step 5: GO annotation (optional)
+## step 5: GO annotation (optional)
 ```
 iterbi.GO.anno <- IterbiEnrichGO(iterbi.result$marker_chain, organism = "hs", pvalueCutoff = 0.05, min_count = 3)
 ```
 
-### step 6: write iterbi result into Seurat object
+## step 6: write iterbi result into Seurat object
 ```
 seuset <- WriteIterbiIntoSeurat(seuset, iterbi.result)
 seuset@assays$iterbi$GO_chain <- iterbi.GO.anno
 ```
 
-## Visualization
+# Visualization
 
-### binary tree
+## binary tree
 
-### heatmap
+## heatmap
 
-### dotplot
+## dotplot
 
-### Marker chain
+# Marker chain
 
-### GO chain
+# GO chain
 
