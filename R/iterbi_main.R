@@ -323,6 +323,7 @@ DataframeToVector <- function(df) {
 #' filter uniquely expressed markers by expression percentage
 #'
 #' @param seuratObj A Seurat object
+#' @param iterbi.cellMeta iterbi.cellMeta dataframe from iterbi
 #' @param iterbi.marker.chain iterbi.marker.chain dataframe contains all the markers
 #' @param assay Assay used for prediction
 #' @param slot slot used for prediction
@@ -330,7 +331,7 @@ DataframeToVector <- function(df) {
 #' @return A new dataframe with two additional columns: cluster_pct (expression percentage in the cluster) and bcg_pct (expression percentage in the background cells)
 #' @export
 #'
-AddMarkerExpressionPct <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data") {
+AddMarkerExpressionPct <- function(seuratObj, iterbi.cellMeta, iterbi.marker.chain, assay = "RNA", slot = "data") {
   # # cannot remove any markers, they all meaningful
   # rm duplicate markers from last
   # iterbi.marker.chain.uniq <- RemoveDuplicatedMarker(iterbi.marker.chain)

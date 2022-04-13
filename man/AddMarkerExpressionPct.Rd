@@ -6,6 +6,7 @@
 \usage{
 AddMarkerExpressionPct(
   seuratObj,
+  iterbi.cellMeta,
   iterbi.marker.chain,
   assay = "RNA",
   slot = "data"
@@ -13,6 +14,8 @@ AddMarkerExpressionPct(
 }
 \arguments{
 \item{seuratObj}{A Seurat object}
+
+\item{iterbi.cellMeta}{iterbi.cellMeta dataframe from iterbi}
 
 \item{iterbi.marker.chain}{iterbi.marker.chain dataframe contains all the markers}
 
