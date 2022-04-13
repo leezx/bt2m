@@ -143,11 +143,99 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
   iterbi.cellMeta$cellName <- NULL
   # remove same columns
   iterbi.cellMeta <- iterbi.cellMeta[,!duplicated(t(iterbi.cellMeta))]
-  # sort the df last to first
+  # sort the df last to first, not the final one
   for (i in ncol(iterbi.cellMeta):1) {
     iterbi.cellMeta <- iterbi.cellMeta[order( iterbi.cellMeta[,i] ),]
   }
   return(list(cellMeta=iterbi.cellMeta, marker_chain=iterbi.marker.chain, bifucation=iterbi.bifucation))
+}
+
+#' order the clusters according to similarity inside the iterbi result
+#'
+#' @param seuratObj A Seurat object
+#' @param iterbi.result A result file from RunIterbi() function
+
+#' @return A re-ordered list. cellMeta contains the final bifurcation for each level
+#' marker_chain contains all the significant markers for each cluster
+#' bifucation contains the bifurcation details (parent, child1, child2)
+#' @export
+#'
+OrderCluster <- function(seuratObj, iterbi.result) {
+    iterbi.cellMeta <- iterbi.result[["cellMeta"]]
+    iterbi.marker.chain <- iterbi.result[["marker_chain"]]
+    iterbi.bifucation <- iterbi.result[["bifucation"]]
+    #
+    all.exprMat <- PrepareExpressionMatrix(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data")
+    all.exprMat <- as.data.frame(t(all.exprMat))
+    all.exprMat <- all.exprMat[rownames(iterbi.cellMeta),]
+    #
+    # too hard, need to check the switch logic, compare the former and latter, it's very complicated
+    for (i in 1:nrow(iterbi.bifucation)) {
+        # print(i)
+        child1 <- iterbi.bifucation[i,2]
+        child2 <- iterbi.bifucation[i,3]
+        tmp.level <- strsplit(child1, split = "_")[[1]][1]
+        tmp.level.index <- as.numeric(substr(tmp.level, 2, 10))
+        if (tmp.level.index==1) next
+        child1.index <- as.numeric(strsplit(child1, split = "_")[[1]][2])
+        child2.index <- as.numeric(strsplit(child2, split = "_")[[1]][2])
+        #
+        tmp.position <- unique(iterbi.cellMeta[,tmp.level])
+        # message(paste(tmp.position, collapse = ", "))
+        former.child <- tmp.position[tmp.position %in% c(child1.index, child2.index)][1]
+        latter.child <- tmp.position[tmp.position %in% c(child1.index, child2.index)][2]
+        former.child.index <- which(tmp.position==former.child)
+        latter.child.index <- which(tmp.position==latter.child)
+        # distance
+        all.exprMat$level <- iterbi.cellMeta[,tmp.level]
+        module.exprMat <- aggregate(all.exprMat[, 1:(ncol(all.exprMat)-1)], list(all.exprMat$level), mean)
+        rownames(module.exprMat) <- module.exprMat$`Group.1`
+        module.exprMat$`Group.1` <- NULL
+        disMat <- cor(t(module.exprMat), method = "spearman")
+        disMat <- 1 - disMat
+        #
+        if (former.child.index==1) {
+            # no formal clusters
+            latter.clusters <- tmp.position[(latter.child.index+1):length(tmp.position)]
+            former.min.dist <- min(disMat[as.character(former.child), as.character(latter.clusters)])
+            latter.min.dist <- min(disMat[as.character(latter.child), as.character(latter.clusters)])
+            if (former.min.dist < latter.min.dist) {
+                # switch
+                tmp.position[former.child.index] <- latter.child
+                tmp.position[latter.child.index] <- former.child
+                message(sprintf("switch %s %s at level %s", former.child, latter.child, tmp.level))
+            }
+        } else if (latter.child.index==length(tmp.position)) {
+            # no latter clusters
+            former.clusters <- tmp.position[1:(former.child.index-1)]
+            former.min.dist <- min(disMat[as.character(former.child), as.character(former.clusters)])
+            latter.min.dist <- min(disMat[as.character(latter.child), as.character(former.clusters)])
+            if (former.min.dist > latter.min.dist) {
+                # switch
+                tmp.position[former.child.index] <- latter.child
+                tmp.position[latter.child.index] <- former.child
+                message(sprintf("switch %s %s at level %s", former.child, latter.child, tmp.level))
+            }
+        } else {
+            former.clusters <- tmp.position[1:(former.child.index-1)]
+            # latter.clusters <- tmp.position[(latter.child.index+1):length(tmp.position)]
+            former.min.dist <- min(disMat[as.character(former.child), as.character(former.clusters)])
+            latter.min.dist <- min(disMat[as.character(latter.child), as.character(former.clusters)])
+            if (former.min.dist > latter.min.dist) {
+                # switch
+                tmp.position[former.child.index] <- latter.child
+                tmp.position[latter.child.index] <- former.child
+                message(sprintf("switch %s %s at level %s", former.child, latter.child, tmp.level))
+            }
+        }
+        # sort
+        tmp.levels <- iterbi.cellMeta[,tmp.level]
+        tmp.levels <- factor(tmp.levels, levels = tmp.position)
+        iterbi.cellMeta <- iterbi.cellMeta[order(tmp.levels, decreasing = F),]
+        # break
+    }
+    iterbi.result[["cellMeta"]] <- iterbi.cellMeta
+    return(iterbi.result)
 }
 
 #' rename the clusters inside the iterbi result
@@ -243,18 +331,19 @@ DataframeToVector <- function(df) {
 #' @export
 #'
 AddMarkerExpressionPct <- function(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data") {
+  # # cannot remove any markers, they all meaningful
   # rm duplicate markers from last
-  iterbi.marker.chain.uniq <- RemoveDuplicatedMarker(iterbi.marker.chain)
-  iterbi.marker.chain.uniq$cluster_pct <- 0
-  iterbi.marker.chain.uniq$bcg_pct <- 0
+  # iterbi.marker.chain.uniq <- RemoveDuplicatedMarker(iterbi.marker.chain)
+  iterbi.marker.chain$cluster_pct <- 0
+  iterbi.marker.chain$bcg_pct <- 0
   # get data
   reference.data <- GetAssayData(object = seuratObj, assay = assay, slot = slot)
   # tmp.exprMat <- as.matrix(seuratObj@assays$RNA@data)
   # too slow!!!
-  # for (i in 1:nrow(iterbi.marker.chain.uniq)) {
+  # for (i in 1:nrow(iterbi.marker.chain)) {
   #   # print(i)
-  #   tmp.gene <- iterbi.marker.chain.uniq$gene[i]
-  #   tmp.cluster <- iterbi.marker.chain.uniq$cluster[i]
+  #   tmp.gene <- iterbi.marker.chain$gene[i]
+  #   tmp.cluster <- iterbi.marker.chain$cluster[i]
   #   tmp.level <- strsplit(tmp.cluster, split = "_")[[1]][1]
   #   tmp.cluster.index <- as.numeric(strsplit(tmp.cluster, split = "_")[[1]][2])
   #   tmp.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,] )
@@ -263,14 +352,14 @@ AddMarkerExpressionPct <- function(seuratObj, iterbi.marker.chain, assay = "RNA"
   #   bcg.gene.expression <- reference.data[tmp.gene,bcg.cells]
   #   tmp.cluster.pct <- sum(tmp.gene.expression>0.1) / length(tmp.gene.expression)
   #   tmp.background.pct <- sum(bcg.gene.expression>0.1) / length(bcg.gene.expression)
-  #   iterbi.marker.chain.uniq[i,"cluster_pct"] <- tmp.cluster.pct
-  #   iterbi.marker.chain.uniq[i,"bcg_pct"] <- tmp.background.pct
+  #   iterbi.marker.chain[i,"cluster_pct"] <- tmp.cluster.pct
+  #   iterbi.marker.chain[i,"bcg_pct"] <- tmp.background.pct
   #   # break
   # }
   # to reduce the computation cost, must do it cluster by cluster
-  for (tmp.cluster in unique(iterbi.marker.chain.uniq$cluster)) {
+  for (tmp.cluster in unique(iterbi.marker.chain$cluster)) {
       # print(i)
-      tmp.df <- subset(iterbi.marker.chain.uniq, cluster==tmp.cluster)
+      tmp.df <- subset(iterbi.marker.chain, cluster==tmp.cluster)
       tmp.level <- strsplit(tmp.cluster, split = "_")[[1]][1]
       tmp.cluster.index <- as.numeric(strsplit(tmp.cluster, split = "_")[[1]][2])
       tmp.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,] )
@@ -280,12 +369,12 @@ AddMarkerExpressionPct <- function(seuratObj, iterbi.marker.chain, assay = "RNA"
       tmp.cluster.pct <- rowSums(as.matrix(tmp.expression>0)) / ncol(tmp.expression)
       tmp.background.pct <- rowSums(as.matrix(bcg.expression>0)) / ncol(bcg.expression)
       # write to df
-      iterbi.marker.chain.uniq[iterbi.marker.chain.uniq$gene %in% tmp.df$gene & iterbi.marker.chain.uniq$cluster==tmp.cluster,]$cluster_pct <- tmp.cluster.pct[tmp.df$gene]
-      iterbi.marker.chain.uniq[iterbi.marker.chain.uniq$gene %in% tmp.df$gene & iterbi.marker.chain.uniq$cluster==tmp.cluster,]$bcg_pct <- tmp.background.pct[tmp.df$gene]
+      iterbi.marker.chain[iterbi.marker.chain$gene %in% tmp.df$gene & iterbi.marker.chain$cluster==tmp.cluster,]$cluster_pct <- tmp.cluster.pct[tmp.df$gene]
+      iterbi.marker.chain[iterbi.marker.chain$gene %in% tmp.df$gene & iterbi.marker.chain$cluster==tmp.cluster,]$bcg_pct <- tmp.background.pct[tmp.df$gene]
       # break
   }
   #
-  return(iterbi.marker.chain.uniq)
+  return(iterbi.marker.chain)
 }
 
 #' remove duplicated GO terms based on overlaps of genes
@@ -556,7 +645,7 @@ WriteIterbiIntoSeurat <- function(seuratObj, iterbi.result) {
   return(seuratObj)
 }
 
-#' Remove duplicated markers from last level
+#' Remove duplicated markers (just for plotting)
 #'
 #' @param iterbi.marker.chain iterbi.marker.chain from iterbi
 #' @param method select a method to sort markers

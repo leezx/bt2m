@@ -16,6 +16,7 @@ PrepareExpressionMatrix <- function(seuratObj, iterbi.marker.chain, assay="RNA",
                                               known_markers = c()) {
   # get data
   reference.data <- GetAssayData(object = seuratObj, assay = assay, slot = slot)
+  reference.data <- as.matrix(reference.data) # RNA data is not matrix
   if (is.null(reference.data)) stop("Data not exist. Please input right assay and slot!!!")
   all.exprMat <- data.frame()
   for (i in unique(iterbi.marker.chain$cluster)) {
