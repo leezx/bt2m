@@ -78,3 +78,6 @@ seuset@assays$iterbi$GO_chain <- iterbi.GO.anno
 
 # GO chain
 
+# Contact us
+Author: Zhixin Li
+Maintainer: Zhixin Li <zxlee@hku.hk>
