@@ -92,6 +92,10 @@ DrawMarkerChainHeatmap <- function(seuratObj, iterbi.cellMeta, iterbi.marker.cha
     color.list$Annotation <- iterbi.colors[1:length(unique(tmp.anno.vector))]
     names(color.list$Annotation) <- as.character(unique(tmp.anno.vector))
   }
+  # sort clusters, to avoid 10 follow 1 cluster
+  for (i in colnames(iterbi.cellMeta)) {
+    iterbi.cellMeta[,i] <- factor(iterbi.cellMeta[,i], levels = unique(iterbi.cellMeta[,i]))
+  }
   # top color bar
   ha <- HeatmapAnnotation(
     df = iterbi.cellMeta,
