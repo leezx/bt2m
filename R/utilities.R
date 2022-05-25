@@ -29,7 +29,25 @@ add.missing.genes <- function(epxrM, all.genes) {
   return(epxrM)
 }
 
-#' a subset function for seurat obj
+add.missing.DEGs <- function(epxrM, all.genes) {
+  # to matrix
+  #epxrM <- as.matrix(epxrM)
+  epxrM <- epxrM[rownames(epxrM) %in% all.genes,]
+  # # check how many genes are not detected
+  missing.genes <- all.genes[!all.genes %in% rownames(epxrM)]
+  # add missing expr to raw count data is good for futher integration
+  add.df <- matrix(rep(0, times = length(missing.genes), each = ncol(epxrM)),
+                   nrow = length(missing.genes),
+                   ncol = ncol(epxrM))
+  rownames(add.df) <- missing.genes
+  colnames(add.df) <- colnames(epxrM)
+  epxrM <- rbind(epxrM, add.df)
+  epxrM <- epxrM[all.genes,]
+  #epxrM <- as(epxrM, "dgCMatrix")
+  return(epxrM)
+}
+
+#' a subset function for seurat obj, origninal cannot work sometimes
 subset_cells <- function(seuratObj, condition) {
     names(condition) <- colnames(seuratObj)
     seuratObj$select_cells <- factor(condition, levels = c(T, F))
@@ -37,6 +55,67 @@ subset_cells <- function(seuratObj, condition) {
     return(tmp.seuratObj)
 }
 
+#' A general function to identify DEGs between case and control
+DEG.cluster.list <- function(seuratObj, cluster.list, ident.1 = "Vcl cKO", ident.2 = "Control", assay = "RNA") {
+    DEGs <- list()
+    for (i in names(cluster.list)) {
+        condition <- seuratObj$cluster %in% cluster.list[[i]]
+        tmp.seuratObj <- subset_cells(seuratObj, condition)
+        tmp.seuratObj@active.ident <- tmp.seuratObj$group
+        tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F, 
+                                min.pct = 0, min.diff.pct = "-Inf", logfc.threshold = 0, assay = assay)
+        DEGs[[i]] <- add.missing.DEGs(tmp.DEGs, rownames(tmp.seuratObj@assays$RNA@counts))
+        # fill emplty genes
+        tmp.empty <- rowSums(DEGs[[i]])==0
+        DEGs[[i]][tmp.empty,]$p_val <- 1
+        DEGs[[i]][tmp.empty,]$p_val_adj <- 1
+        # add gene column
+        DEGs[[i]]$gene <- rownames(DEGs[[i]])
+        # add log2FC and correlation
+        cells_1 <- rownames(subset(seuratObj@meta.data, cluster %in% cluster.list[[i]] & group==ident.2))
+        cells_2 <- rownames(subset(seuratObj@meta.data, cluster %in% cluster.list[[i]] & group==ident.1))
+        log2fc <- log2(rowMeans(seuratObj@assays$RNA@data[,cells_2])+1) - log2(rowMeans(seuratObj@assays$RNA@data[,cells_1])+1)
+        corM <- cor(t(as.matrix(seuratObj@assays$RNA@data[,c(cells_1,cells_2)])), c(rep(0, length.out = length(cells_1)),
+                                                                       rep(1, length.out = length(cells_2))
+                                                                       ))
+        corM[is.na(corM)] <- 0
+        DEGs[[i]]$log2FC <- log2fc[DEGs[[i]]$gene]
+        DEGs[[i]]$correlation <- as.data.frame(corM)[DEGs[[i]]$gene,]
+        # break
+    }
+    return(DEGs)
+}
+
+#' A general function to identify DEGs between case and control
+DEG.1by1 <- function(seuratObj, ident.1 = "Vcl cKO", ident.2 = "Control", assay = "RNA") {
+    DEGs <- list()
+    for (i in seuratObj@active.ident) {
+        # condition <- seuratObj$cluster == i
+        tmp.seuratObj <- subset(seuratObj, subset = cluster == i)
+        tmp.seuratObj@active.ident <- tmp.seuratObj$group
+        tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F, 
+                                min.pct = 0, min.diff.pct = "-Inf", logfc.threshold = 0, assay = assay)
+        DEGs[[i]] <- add.missing.DEGs(tmp.DEGs, rownames(tmp.seuratObj@assays$RNA@counts))
+        # fill emplty genes
+        tmp.empty <- rowSums(DEGs[[i]])==0
+        DEGs[[i]][tmp.empty,]$p_val <- 1
+        DEGs[[i]][tmp.empty,]$p_val_adj <- 1
+        # add gene column
+        DEGs[[i]]$gene <- rownames(DEGs[[i]])
+        # add log2FC and correlation
+        cells_1 <- rownames(subset(seuratObj@meta.data, cluster==i & group==ident.2))
+        cells_2 <- rownames(subset(seuratObj@meta.data, cluster==i & group==ident.1))
+        log2fc <- log2(rowMeans(seuratObj@assays$RNA@data[,cells_2])+1) - log2(rowMeans(seuratObj@assays$RNA@data[,cells_1])+1)
+        corM <- cor(t(as.matrix(seuratObj@assays$RNA@data[,c(cells_1,cells_2)])), c(rep(0, length.out = length(cells_1)),
+                                                                       rep(1, length.out = length(cells_2))
+                                                                       ))
+        corM[is.na(corM)] <- 0
+        DEGs[[i]]$log2FC <- log2fc[DEGs[[i]]$gene]
+        DEGs[[i]]$correlation <- as.data.frame(corM)[DEGs[[i]]$gene,]
+        #
+    }
+    return(DEGs)
+}
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Functions for plotting
@@ -173,7 +252,7 @@ DotPlot_order <- function (object, assay = NULL, features, cols = c("lightgrey",
 
 
 ################################################################
-#' a stacked version of VlnPlot in Seurat
+#' a stacked version of VlnPlot in Seurat, from public website
 
 ## remove the x-axis text and tick
 ## plot.margin to adjust the white space between each plot.
