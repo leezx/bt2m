@@ -95,6 +95,12 @@ DEG.1by1 <- function(seuratObj, ident.1 = "Vcl cKO", ident.2 = "Control", assay 
         tmp.seuratObj@active.ident <- tmp.seuratObj$group
         tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F, 
                                 min.pct = 0, min.diff.pct = "-Inf", logfc.threshold = 0, assay = assay)
+        if(dim(tmp.DEGs)[1]<1) {
+          message(sprintf("skipping %s, no DEGs found...", i))
+          next
+        } else {
+          message(sprintf("identifying DEGs in %s between %s and %s...", i, ident.1, ident.2))
+        }
         DEGs[[i]] <- add.missing.DEGs(tmp.DEGs, rownames(tmp.seuratObj@assays$RNA@counts))
         # fill emplty genes
         tmp.empty <- rowSums(DEGs[[i]])==0
