@@ -63,3 +63,23 @@ GetTestData <- function() {
 #' @source \url{http://www.cellchat.org/}
 #'
 "mouse.ligand.receptor"
+
+#' Gene annotation for mouse genome
+#'
+#' All mouse genes and annotation
+#'
+#' @format A vector
+#' @concept data
+#' @source \url{https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest}
+#'
+"gene.anno.mm10.v3"
+
+#' Gene annotation for human genome
+#'
+#' All human genes and annotation
+#'
+#' @format A vector
+#' @concept data
+#' @source \url{https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest}
+#'
+"gene.anno.GRCh38.v3"
