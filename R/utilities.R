@@ -29,22 +29,42 @@ add.missing.genes <- function(epxrM, all.genes) {
   return(epxrM)
 }
 
-add.missing.DEGs <- function(epxrM, all.genes) {
-  # to matrix
-  #epxrM <- as.matrix(epxrM)
-  epxrM <- epxrM[rownames(epxrM) %in% all.genes,]
-  # # check how many genes are not detected
-  missing.genes <- all.genes[!all.genes %in% rownames(epxrM)]
-  # add missing expr to raw count data is good for futher integration
-  add.df <- matrix(rep(0, times = length(missing.genes), each = ncol(epxrM)),
-                   nrow = length(missing.genes),
-                   ncol = ncol(epxrM))
-  rownames(add.df) <- missing.genes
-  colnames(add.df) <- colnames(epxrM)
-  epxrM <- rbind(epxrM, add.df)
-  epxrM <- epxrM[all.genes,]
-  #epxrM <- as(epxrM, "dgCMatrix")
-  return(epxrM)
+# add full cells as background point to show skeleton
+add.background.point.facet <- function(all_tsne, cluster.order, sample.order,
+                                       cluster="cluster", sample="sample", dim1="UMAP_1", dim2="UMAP_2"
+) {
+  # project/Data_center/analysis/ApcKO_multiomics/ApcKO-seurat.ipynb
+  # add full cells as background point to show skeleton
+  # repeat the col or row for n times
+  rep.row<-function(x,n){
+    matrix(rep(x,each=n),nrow=n)
+  }
+  rep.col<-function(x,n){
+    matrix(rep(x,each=n), ncol=n, byrow=TRUE)
+  }
+  # bind_rows(replicate(3, all_tsne, simplify = F))
+  samples <- unique(as.character(all_tsne[,sample]))
+  # replicate each samples in coloum
+  rep.df <- rep.col(all_tsne[,cluster], length(samples))
+  colnames(rep.df) <- samples
+  # add to origin
+  all_tsne_rep <- cbind(all_tsne, rep.df)
+  # each row is a cell,
+  # if the cell is not used in facet, then assign it to others
+  for (i in samples) {
+    all_tsne_rep[all_tsne[,sample]!=i, i] <- "others"
+    next
+  }
+  all_tsne_rep <- all_tsne_rep[,c(dim1, dim2, samples)]
+  # melt to add full list of samples, cell number duplicated for length(samples)
+  merged_df <- reshape2::melt(all_tsne_rep, id.vars = c(dim1, dim2))
+  # set levels for samples
+  merged_df$variable <- factor(merged_df$variable, levels = sample.order)
+  # set levels for clusters
+  merged_df$value <- factor(merged_df$value, levels = c(cluster.order, "others"))
+  merged_df <- merged_df[order(merged_df$value, decreasing = T),]
+  colnames(merged_df) <- c(dim1, dim2, sample, cluster)
+  return(merged_df)
 }
 
 #' a subset function for seurat obj, origninal cannot work sometimes
@@ -62,7 +82,7 @@ DEG.cluster.list <- function(seuratObj, cluster.list, ident.1 = "Vcl cKO", ident
         condition <- seuratObj$cluster %in% cluster.list[[i]]
         tmp.seuratObj <- subset_cells(seuratObj, condition)
         tmp.seuratObj@active.ident <- tmp.seuratObj$group
-        tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F, 
+        tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F,
                                 min.pct = 0, min.diff.pct = "-Inf", logfc.threshold = 0, assay = assay)
         DEGs[[i]] <- add.missing.DEGs(tmp.DEGs, rownames(tmp.seuratObj@assays$RNA@counts))
         # fill emplty genes
@@ -93,7 +113,7 @@ DEG.1by1 <- function(seuratObj, ident.1 = "Vcl cKO", ident.2 = "Control", assay 
         message(sprintf("identifying DEGs in %s between %s and %s...", i, ident.1, ident.2))
         tmp.seuratObj <- subset(seuratObj, subset = cluster == i)
         tmp.seuratObj@active.ident <- tmp.seuratObj$group
-        tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F, 
+        tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F,
                                 min.pct = 0, min.diff.pct = "-Inf", logfc.threshold = 0, assay = assay)
         if(dim(tmp.DEGs)[1]<1) {
           message(sprintf("skipping %s, no DEGs found...", i))
@@ -128,14 +148,14 @@ DEG.1by1 <- function(seuratObj, ident.1 = "Vcl cKO", ident.2 = "Control", assay 
 #' origninal DotPlot in Seurat cannot order features
 
 source("https://github.com/satijalab/seurat/raw/8da35ba8dc2d60f504f7cf276efd684dc19a418c/R/utilities.R")
-DotPlot_order <- function (object, assay = NULL, features, cols = c("lightgrey", 
-    "blue"), col.min = -2.5, col.max = 2.5, dot.min = 0, dot.scale = 6, 
-    group.by = NULL, split.by = NULL, scale = TRUE, scale.by = "radius", 
-    scale.min = NA, scale.max = NA) 
+DotPlot_order <- function (object, assay = NULL, features, cols = c("lightgrey",
+    "blue"), col.min = -2.5, col.max = 2.5, dot.min = 0, dot.scale = 6,
+    group.by = NULL, split.by = NULL, scale = TRUE, scale.by = "radius",
+    scale.min = NA, scale.max = NA)
 {
     if(is.null(assay)) assay <- DefaultAssay(object = object)
     DefaultAssay(object = object) <- assay
-    scale.func <- switch(EXPR = scale.by, size = scale_size, 
+    scale.func <- switch(EXPR = scale.by, size = scale_size,
         radius = scale_radius, stop("'scale.by' must be either 'size' or 'radius'"))
     data.features <- FetchData(object = object, vars = features)
     data.features$id <- if (is.null(x = group.by)) {
@@ -158,16 +178,16 @@ DotPlot_order <- function (object, assay = NULL, features, cols = c("lightgrey",
         names(x = cols) <- unique(x = splits)
         data.features$id <- paste(data.features$id, splits, sep = "_")
         unique.splits <- unique(x = splits)
-        id.levels <- paste0(rep(x = id.levels, each = length(x = unique.splits)), 
+        id.levels <- paste0(rep(x = id.levels, each = length(x = unique.splits)),
             "_", rep(x = unique(x = splits), times = length(x = id.levels)))
     }
     data.plot <- lapply(X = unique(x = data.features$id), FUN = function(ident) {
-        data.use <- data.features[data.features$id == ident, 
+        data.use <- data.features[data.features$id == ident,
             1:(ncol(x = data.features) - 1), drop = FALSE]
         avg.exp <- apply(X = data.use, MARGIN = 2, FUN = function(x) {
             return(mean(x = expm1(x = x)))
         })
-        pct.exp <- apply(X = data.use, MARGIN = 2, FUN = PercentAbove, 
+        pct.exp <- apply(X = data.use, MARGIN = 2, FUN = PercentAbove,
             threshold = 0)
         return(list(avg.exp = avg.exp, pct.exp = pct.exp))
     })
@@ -186,13 +206,13 @@ DotPlot_order <- function (object, assay = NULL, features, cols = c("lightgrey",
         scale <- FALSE
         warning("Only one identity present, the expression values will be not scaled.")
     }
-    avg.exp.scaled <- sapply(X = unique(x = data.plot$features.plot), 
+    avg.exp.scaled <- sapply(X = unique(x = data.plot$features.plot),
         FUN = function(x) {
-            data.use <- data.plot[data.plot$features.plot == 
+            data.use <- data.plot[data.plot$features.plot ==
                 x, "avg.exp"]
             if (scale) {
                 data.use <- scale(x = data.use)
-                data.use <- MinMax(data = data.use, min = col.min, 
+                data.use <- MinMax(data = data.use, min = col.min,
                   max = col.max)
             }
             else {
@@ -202,25 +222,25 @@ DotPlot_order <- function (object, assay = NULL, features, cols = c("lightgrey",
         })
     avg.exp.scaled <- as.vector(x = t(x = avg.exp.scaled))
     if (!is.null(x = split.by)) {
-        avg.exp.scaled <- as.numeric(x = cut(x = avg.exp.scaled, 
+        avg.exp.scaled <- as.numeric(x = cut(x = avg.exp.scaled,
             breaks = 20))
     }
     data.plot$avg.exp.scaled <- avg.exp.scaled
-    data.plot$features.plot <- factor(x = data.plot$features.plot, 
+    data.plot$features.plot <- factor(x = data.plot$features.plot,
         levels = rev(x = features))
     data.plot$pct.exp[data.plot$pct.exp < dot.min] <- NA
     data.plot$pct.exp <- data.plot$pct.exp * 100
     if (!is.null(x = split.by)) {
-        splits.use <- vapply(X = as.character(x = data.plot$id), 
-            FUN = gsub, FUN.VALUE = character(length = 1L), pattern = paste0("^((", 
-                paste(sort(x = levels(x = object), decreasing = TRUE), 
-                  collapse = "|"), ")_)"), replacement = "", 
+        splits.use <- vapply(X = as.character(x = data.plot$id),
+            FUN = gsub, FUN.VALUE = character(length = 1L), pattern = paste0("^((",
+                paste(sort(x = levels(x = object), decreasing = TRUE),
+                  collapse = "|"), ")_)"), replacement = "",
             USE.NAMES = FALSE)
         data.plot$colors <- mapply(FUN = function(color, value) {
             return(colorRampPalette(colors = c("grey", color))(20)[value])
         }, color = cols[splits.use], value = avg.exp.scaled)
     }
-    color.by <- ifelse(test = is.null(x = split.by), yes = "avg.exp.scaled", 
+    color.by <- ifelse(test = is.null(x = split.by), yes = "avg.exp.scaled",
         no = "colors")
     if (!is.na(x = scale.min)) {
         data.plot[data.plot$pct.exp < scale.min, "pct.exp"] <- scale.min
@@ -232,12 +252,12 @@ DotPlot_order <- function (object, assay = NULL, features, cols = c("lightgrey",
     # print(head(data.plot))
     data.plot$features.plot <- factor(data.plot$features.plot, levels = features)
     #
-    plot <- ggplot(data = data.plot, mapping = aes_string(x = "features.plot", 
-        y = "id")) + geom_point(mapping = aes_string(size = "pct.exp", 
-        color = color.by)) + scale.func(range = c(0, dot.scale), 
-        limits = c(scale.min, scale.max)) + theme(axis.title.x = element_blank(), 
-        axis.title.y = element_blank()) + guides(size = guide_legend(title = "Percent Expressed")) + 
-        labs(x = "Features", y = ifelse(test = is.null(x = split.by), 
+    plot <- ggplot(data = data.plot, mapping = aes_string(x = "features.plot",
+        y = "id")) + geom_point(mapping = aes_string(size = "pct.exp",
+        color = color.by)) + scale.func(range = c(0, dot.scale),
+        limits = c(scale.min, scale.max)) + theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank()) + guides(size = guide_legend(title = "Percent Expressed")) +
+        labs(x = "Features", y = ifelse(test = is.null(x = split.by),
             yes = "Identity", no = "Split Identity")) + theme_cowplot()
     if (!is.null(x = split.by)) {
         plot <- plot + scale_color_identity()
@@ -261,19 +281,19 @@ DotPlot_order <- function (object, assay = NULL, features, cols = c("lightgrey",
 ## remove the x-axis text and tick
 ## plot.margin to adjust the white space between each plot.
 ## ... pass any arguments to VlnPlot in Seurat
-modify_vlnplot <- function(obj, 
-                          feature, 
-                          pt.size = 0, 
+modify_vlnplot <- function(obj,
+                          feature,
+                          pt.size = 0,
                           plot.margin = unit(c(-0.75, 0, -0.75, 0), "cm"),
                           ...) {
-  p <- VlnPlot(obj, features = feature, pt.size = pt.size, ... )  + 
-                xlab("") + ylab(feature) + ggtitle("") + 
-                theme(legend.position = "none", 
-                      axis.text.x = element_blank(), 
-                      axis.ticks.x = element_blank(), 
-                      axis.title.y = element_text(size = 20, angle = 0, face = "bold.italic", vjust = 0.5), 
-                      axis.text.y = element_text(size = 10), 
-                      plot.margin = plot.margin ) 
+  p <- VlnPlot(obj, features = feature, pt.size = pt.size, ... )  +
+                xlab("") + ylab(feature) + ggtitle("") +
+                theme(legend.position = "none",
+                      axis.text.x = element_blank(),
+                      axis.ticks.x = element_blank(),
+                      axis.title.y = element_text(size = 20, angle = 0, face = "bold.italic", vjust = 0.5),
+                      axis.text.y = element_text(size = 10),
+                      plot.margin = plot.margin )
   return(p)
 }
 
@@ -286,20 +306,20 @@ extract_max <- function(p){
 
 ## main function
 StackedVlnPlot <- function(obj, features,
-                          pt.size = 0, 
+                          pt.size = 0,
                           plot.margin = unit(c(-0.75, 0, -0.75, 0), "cm"),
                           ...) {
-  
+
   plot_list <- purrr::map(features, function(x) modify_vlnplot(obj = obj,feature = x, ...))
-  
+
   # Add back x-axis title to bottom plot. patchwork is going to support this?
   plot_list[[length(plot_list)]] <- plot_list[[length(plot_list)]] +
     theme(axis.text.x = element_text(angle = 75, size = 15), axis.ticks.x = element_line())
-  
-  # change the y-axis tick to only max value 
+
+  # change the y-axis tick to only max value
   ymaxs <- purrr::map_dbl(plot_list, extract_max)
-  plot_list <- purrr::map2(plot_list, ymaxs, function(x,y) x + 
-                            scale_y_continuous(breaks = c(y)) + 
+  plot_list <- purrr::map2(plot_list, ymaxs, function(x,y) x +
+                            scale_y_continuous(breaks = c(y)) +
                             expand_limits(y = y))
 
   p <- patchwork::wrap_plots(plotlist = plot_list, ncol = 1)
@@ -308,5 +328,6 @@ StackedVlnPlot <- function(obj, features,
 }
 
 ################################################################
+# unclassified function from Toolsets.R
 
 
