@@ -70,6 +70,7 @@ add.background.point.facet.wrap <- function(all_tsne, cluster.order, sample.orde
 }
 
 # three variable, use facet_grid
+# path: project/Data_center/analysis/ApcKO_multiomics/ApcKO-seurat.ipynb
 add.background.point.facet.grid <- function(all_tsne, cluster.order, sample.order, assay.order,
                                             cluster="cluster", sample="sample", assay="assay",
                                             dim1="UMAP_1", dim2="UMAP_2"

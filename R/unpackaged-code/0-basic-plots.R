@@ -6,6 +6,10 @@
 # example_col <- brewer.pal(5,"Set2")
 
 
+# facet_wrap
+# path:
+# facet_grid
+# path: EllyLab/mouse/singleCell/case/GBS_ENCC/Tg%20(GBS-GFP)%20and%20metabolic.ipynb
 
 # venn plot
 # path: EllyLab/human/singleCell/HSCR/5-AS_and_metabolism_CGS.ipynb
