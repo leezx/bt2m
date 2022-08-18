@@ -29,8 +29,10 @@ add.missing.genes <- function(epxrM, all.genes) {
   return(epxrM)
 }
 
+# facet with background color
+# path: project/Data_center/analysis/ApcKO_multiomics/ApcKO-seurat.ipynb
 # add full cells as background point to show skeleton
-add.background.point.facet <- function(all_tsne, cluster.order, sample.order,
+add.background.point.facet.wrap <- function(all_tsne, cluster.order, sample.order,
                                        cluster="cluster", sample="sample", dim1="UMAP_1", dim2="UMAP_2"
 ) {
   # project/Data_center/analysis/ApcKO_multiomics/ApcKO-seurat.ipynb
@@ -64,6 +66,47 @@ add.background.point.facet <- function(all_tsne, cluster.order, sample.order,
   merged_df$value <- factor(merged_df$value, levels = c(cluster.order, "others"))
   merged_df <- merged_df[order(merged_df$value, decreasing = T),]
   colnames(merged_df) <- c(dim1, dim2, sample, cluster)
+  return(merged_df)
+}
+
+# three variable, use facet_grid
+add.background.point.facet.grid <- function(all_tsne, cluster.order, sample.order, assay.order,
+                                            cluster="cluster", sample="sample", assay="assay",
+                                            dim1="UMAP_1", dim2="UMAP_2"
+) {
+  # project/Data_center/analysis/ApcKO_multiomics/ApcKO-seurat.ipynb
+  # add full cells as background point to show skeleton
+  # repeat the col or row for n times
+  rep.row<-function(x,n){
+    matrix(rep(x,each=n),nrow=n)
+  }
+  rep.col<-function(x,n){
+    matrix(rep(x,each=n), ncol=n, byrow=TRUE)
+  }
+  # bind_rows(replicate(3, all_tsne, simplify = F))
+  samples <- unique(as.character(all_tsne[,sample]))
+  # replicate each samples in coloum
+  rep.df <- rep.col(all_tsne[,cluster], length(samples))
+  colnames(rep.df) <- samples
+  # add to origin
+  all_tsne_rep <- cbind(all_tsne, rep.df)
+  # each row is a cell,
+  # if the cell is not used in facet, then assign it to others
+  for (i in samples) {
+    all_tsne_rep[all_tsne[,sample]!=i, i] <- "others"
+    next
+  }
+
+  all_tsne_rep <- all_tsne_rep[,c(dim1, dim2, samples, assay)]
+  # melt to add full list of samples, cell number duplicated for length(samples)
+  merged_df <- reshape2::melt(all_tsne_rep, id.vars = c(dim1, dim2, assay))
+  # set levels for samples
+  merged_df$variable <- factor(merged_df$variable, levels = sample.order)
+  # set levels for clusters
+  merged_df$value <- factor(merged_df$value, levels = c(cluster.order, "others"))
+  merged_df <- merged_df[order(merged_df$value, decreasing = T),]
+  colnames(merged_df) <- c(dim1, dim2, assay, sample, cluster)
+  merged_df$assay <- factor(merged_df$assay, levels = assay.order)
   return(merged_df)
 }
 
