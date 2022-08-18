@@ -1,4 +1,33 @@
 
+# fit a principal_curve
+# path: project/Data_center/analysis/ApcKO_multiomics/ApcKO-seurat.ipynb
+pricu1 <- princurve::principal_curve(as.matrix(all.umap[,c("UMAP_1","UMAP_2")]),
+                                     smoother='lowess', trace=F, plot_iterations=F, stretch=100, maxit=10, thresh=-1000)
+pc.line1 <- as.data.frame(pricu1$s[order(pricu1$lambda), ])
+all.umap$pseudotime <- pricu1$lambda/max(pricu1$lambda)
+centers <- all.umap %>% dplyr::group_by(cluster) %>% summarize(UMAP_1 = median(UMAP_1),
+                                                               UMAP_2 = median(UMAP_2))
+options(repr.plot.width=5, repr.plot.height=5)
+p <- ggplot(all.umap, aes(x=UMAP_1, y=UMAP_2, color=pseudotime)) +
+  # facet_grid(cols = vars(variable)) +
+  # facet_wrap( ~ variable, ncol=2) + # error in border
+  geom_point(size=0.3, alpha=0.8) +
+  geom_density_2d(color='black', size=0.05, alpha=0.15) +
+  geom_text(data = centers, mapping = aes(label = cluster), size = 4.5, color="black") +
+  geom_line(data=pc.line1, color='red', size=0.5) +
+  labs(x = "UMAP_1",y = "UMAP_2", title = "") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme(legend.title=element_blank()) +
+  # theme(legend.position = "none") +
+  theme(strip.background = element_rect(fill = "gray97", color = NA)) + # strip background color
+  theme(strip.placement = "outside", strip.text.x = element_text(face="plain", size = 14), #italic
+        strip.text.y = element_text(face="plain", size = 11)) +
+  theme(panel.spacing=unit(.3, "lines"),panel.border = element_rect(color = "black", fill = NA, size = 0.2,
+                                                                    colour = "black")) #+ #line size
+#scale_color_manual(values=tmp.colors)
+p
+
 # a modified version of plot_cell_trajectory function in monocle package
 # add use.cells, you can remove any cells in the plot, eg.sampling cells
 # error history: a safer solution might be to use dplyr::slice in case you end up needing S4Vectors

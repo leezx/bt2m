@@ -5,6 +5,75 @@
 # example_col <- rev(brewer.pal(10,"Set3"))
 # example_col <- brewer.pal(5,"Set2")
 
+# venn plot
+# path: EllyLab/human/singleCell/HSCR/5-AS_and_metabolism_CGS.ipynb
+require(yyplot)
+require(ggplot2)
+# require(ggforce)
+options(repr.plot.width=5, repr.plot.height=4)
+g2 <- ggplot(d) +
+  geom_circle(aes_(x0 = ~x, y0 = ~y, r = ~diameters/2, fill = ~labels, color = ~labels), size=1.5) +
+  # geom_text(aes_(x = ~x, y = ~y, label = ~labels)) +
+  coord_fixed() +
+  theme_void() +
+  scale_color_manual(values = c("darkred","red")) +
+  scale_fill_manual(values = alpha(c("darkred","red"), .2)) +
+  theme(legend.title = element_blank(), legend.text = element_text(size = 15), legend.position = c(0.65, 0.35))+
+  geom_text(x=0.20, y=0.5, label="843", size=6) +
+  geom_text(x=0.50, y=0.5, label="548", size=8, fontface="bold") +
+  geom_text(x=0.80, y=0.5, label="1080", size=6)
+# scale_color_manual(values = c("#E41A1C", "#984EA3", 'grey50')) +
+# scale_fill_manual(values = alpha(c("#E41A1C", "#984EA3", 'grey50'), .2))
+# scale_color_manual(values = c("#E41A1C", "#984EA3", 'grey50',"blue")) +
+# scale_fill_manual(values = alpha(c("#E41A1C", "#984EA3", 'grey50',"blue"), .2))
+g2
+
+# scatter with fit line
+# path: project/Data_center/analysis/ApcKO_multiomics/ApcKO-seurat.ipynb
+options(repr.plot.width=4, repr.plot.height=4)
+p <- ggplot(data = all.umap.peaks, aes(x = pseudotime, y = peakNum)) +
+  geom_point(aes(color=cluster), size=1) +
+  # geom_smooth(method = "lm", se=F, color="black", formula = y ~ x) +
+  geom_smooth(method = "loess", se=F, color="black") +
+  theme_bw() +
+  labs(x = "Expression of \n37 RNA splicing regulators", y = "AS frequency", title = "") +
+  theme(legend.position = "none") +
+  theme(axis.text  = element_text(size = 10), axis.title = element_text(size = 14)) +
+  scale_color_manual(values=tmp.colors) #+
+# geom_text(x = 0.2, y = 1.47, label = "P-value < 2.2E-16", size = 4) +
+# annotate("text", label = "P-value < 2.2E-16", x = 0.2, y = 1.47, size = 4, colour = "black") +
+# scale_x_continuous(limits = c(-0.5, 0.4)) +
+# scale_y_continuous(limits = c(0.5, 1.5))
+p
+
+tmp <- lm(pseudotime ~ peakNum, all.umap.peaks)
+summary(tmp)
+
+# density ridges
+# path: project/Data_center/analysis/ApcKO_multiomics/ApcKO-seurat.ipynb
+library(ggridges)
+options(repr.plot.width=4, repr.plot.height=3)
+p1 <- ggplot(all.umap) +
+  aes(x= pseudotime, y = sample, color = sample, fill=sample) +
+  geom_density_ridges(alpha = 0.75, span=0.2) +
+  # theme_ridges() +
+  theme_bw() +
+  #scale_color_manual(values=rev(sample.colors)) +
+  #scale_fill_manual(values=rev(sample.colors)) +
+  labs(x = "Pseudotime", y = "", title = "") +
+  theme(legend.position = "none") +
+  # empty border, ticks, text
+  theme(panel.border = element_blank(), # panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_blank(), axis.ticks=element_blank(),
+        axis.text.x = element_text(angle = 0, size = 10, vjust = 5, face = "plain"),
+        axis.title = element_text(size = 13, face = "plain"),
+        axis.text.y = element_text(size = 11, face = "bold")
+  ) #+
+# guides(y.sec = guide_axis_label_trans(~paste("Ha!", .y))) #+
+# scale_y_discrete(sec.axis = sec_axis(name = "Density")) # not support
+# theme(axis.title=element_blank(), axis.text=element_blank(), )
+p1
+
 # boxplot
 draw_boxplot <- function(data=pca_data, use=c("colour_by", "gene_num"), xlab="", ylab="", title=""){
   data$x <- data[,use[1]]
