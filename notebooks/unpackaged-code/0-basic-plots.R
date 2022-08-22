@@ -9,6 +9,9 @@
 # example_col <- brewer.pal(5,"Set2")
 
 
+# geom_point with geom_label_repel
+# path: EllyLab/human/bulkRNA/bulk%20RNA-seq.ipynb
+
 # facet_wrap
 # path:
 # facet_grid
