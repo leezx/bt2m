@@ -4,7 +4,7 @@ list.files()
 
 
 object.size()
-
+format(object.size(merged.seuset), units = "auto")
 
 start_time <- Sys.time()
 # do something
