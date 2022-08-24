@@ -1,4 +1,5 @@
 
+# R
 dir.create()
 list.files()
 
@@ -11,3 +12,6 @@ start_time <- Sys.time()
 end_time <- Sys.time()
 end_time - start_time
 
+# linux
+## remove strange characters
+## awk '{ gsub(/\xef\xbb\xbf/,""); print }' library.csv
