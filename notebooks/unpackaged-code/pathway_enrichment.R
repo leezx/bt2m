@@ -570,7 +570,7 @@ plot.gsea.GO.KEGG.barplot.batch <- function(anno_list=gsea_list$go_list, type, f
 #' options(repr.plot.width=4, repr.plot.height=9)
 #' go_list <- plot.GO.KEGG.barplot.batch(result$go_list, type="GO")
 #'
-plot.ora.GO.KEGG.barplot.batch <- function(anno_list=go_list, type, f.length=40) {
+plot.ora.GO.KEGG.barplot.batch <- function(anno_list=go_list, type, f.length=40, rmDup=F, rmPattern="viral") {
   # anno_list=kegg_list
   # colors <- c("#FB8072", "#B3DE69", "#BC80BD")
   library(ggplot2)
@@ -590,20 +590,27 @@ plot.ora.GO.KEGG.barplot.batch <- function(anno_list=go_list, type, f.length=40)
     barplot_df <- barplot_df[order(barplot_df$pvalue, decreasing = F),]
     barplot_df$Description <- factor(barplot_df$Description, levels=rev(barplot_df$Description))
     maxpvalue <- max(-log10(barplot_df$pvalue))
+    #####################
     # filter duplication
-    left_go <- c()
-    barplot_df <- barplot_df[!duplicated(barplot_df$geneID),]
-    for (one in 1:length(barplot_df$ID)) {
-      if (one ==1) {left_go <- c(left_go, one); next}
-      leftGenes <- strsplit(paste(barplot_df[left_go,]$geneID, collapse = "/"), split = "/")
-      tmpGenes <- strsplit(paste(barplot_df[one,]$geneID, collapse = "/"), split = "/")
-      if (length(intersect(leftGenes, tmpGenes))/length(tmpGenes) > 0.7) {next}
-      left_go <- c(left_go, one)
+    if (rmDup) {
+      left_go <- c()
+      barplot_df <- barplot_df[!duplicated(barplot_df$geneID),]
+      for (one in 1:length(barplot_df$ID)) {
+        if (one ==1) {left_go <- c(left_go, one); next}
+        leftGenes <- strsplit(paste(barplot_df[left_go,]$geneID, collapse = "/"), split = "/")
+        tmpGenes <- strsplit(paste(barplot_df[one,]$geneID, collapse = "/"), split = "/")
+        if (length(intersect(leftGenes, tmpGenes))/length(tmpGenes) > 0.7) {next}
+        left_go <- c(left_go, one)
+      }
+      barplot_df <- barplot_df[left_go,]
     }
-    barplot_df <- barplot_df[left_go,]
+    #####################
     # remove terms with too long description
     barplot_df <- barplot_df[sapply(as.character(barplot_df$Description), nchar) < f.length,]
-    #
+    #####################
+    # remove patterns
+    barplot_df <- subset(barplot_df, !grepl(rmPattern, Description))
+    # plotting
     if (length(barplot_df$Description)>20) {barplot_df <- barplot_df[1:20,]}
     g <- ggplot(data=barplot_df, aes(x=Description, y=-log10(pvalue))) +
       geom_bar(stat="identity", fill = tmpcolors[j]) +
