@@ -3,6 +3,15 @@
 ## quick
 HT29.seuset$crispr <- ifelse(HT29.seuset$nFeature_GDO>0,  'Perturbed', 'NT')
 
+## apply series
+rownames(HT29.seuset@assays$GDO@data)[apply(HT29.seuset@assays$GDO@data, 2, which.max)]
+
+## string
+HT29.seuset$gene <- unlist(lapply(HT29.seuset$NT, function(x) {
+  strsplit(x, split = "-")[[1]][1]
+}))
+
+
 ## system operation
 dir.create()
 list.files()
