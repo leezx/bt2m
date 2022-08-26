@@ -1,5 +1,9 @@
 
 # R
+## quick
+HT29.seuset$crispr <- ifelse(HT29.seuset$nFeature_GDO>0,  'Perturbed', 'NT')
+
+## system operation
 dir.create()
 list.files()
 
