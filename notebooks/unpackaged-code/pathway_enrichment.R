@@ -208,15 +208,16 @@ gsea.ID2gene <- function(ID, organism="hs", returnVector=T) {
 #' @examples
 #' gsea_list <- gsea.go.kegg.clusterProfiler(geneList = pheno_DEGs, use.score = "cor", organism="mm")
 #'
-gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor", organism="hs", pvalueCutoff = 0.05) {
+gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor", organism="hs", pvalueCutoff = 1) {
   pAdjustMethod = "BH";
   library(clusterProfiler)
   go_list <- list()
   kegg_list <- list()
   gsea_list <- list()
+  reactome_list <- list()
   nameList <- names(geneList)
   if (is.null(nameList)) {
-    print("no name for the gene list!!!\n")
+    print("No name for the gene list!!! Will use 1:n\n")
     nameList <- 1:length(geneList)
   }
   for (i in nameList) {
@@ -237,21 +238,30 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
                    OrgDb        = org.Mm.eg.db,
                    keyType = "ENTREZID",
                    ont          = "BP",
-                   nPerm        = 1000,
-                   minGSSize    = 100,
-                   maxGSSize    = 500,
+                   # nPerm        = 1000,
+                   minGSSize    = 10,
+                   maxGSSize    = 1000,
                    pvalueCutoff = pvalueCutoff,
-                   pAdjustMethod = pAdjustMethod,
-                   by = "fgsea", #fgsea, DOSE
+                   # pAdjustMethod = pAdjustMethod,
+                   # by = "fgsea", #fgsea, DOSE
                    verbose      = F)
+      # gseGO(geneRank, 'org.Hs.eg.db', keyType = "ENTREZID", ont="all", nPerm = 1000, minGSSize = 10,
+      # maxGSSize = 1000, pvalueCutoff=1)
       kk <- gseKEGG(geneList     = geneList2,
-                    organism     = 'mmu', #hsa
-                    nPerm        = 1000,
+                    # organism     = 'mmu', #hsa
+                    # nPerm        = 1000,
                     minGSSize    = 10,
+                    maxGSSize = 1000,
                     pvalueCutoff = pvalueCutoff,
-                    pAdjustMethod = pAdjustMethod,
-                    by = "fgsea",
+                    # pAdjustMethod = pAdjustMethod,
+                    # by = "fgsea",
                     verbose      = F)
+      # gseKEGG(geneRank, nPerm = 1000, minGSSize = 10, maxGSSize = 1000, pvalueCutoff=1)
+      Reactomep <- gsePathway(geneList2,
+                              # nPerm = 1000,
+                              minGSSize = 10,
+                              maxGSSize = 1000,
+                              pvalueCutoff = pvalueCutoff)
     }
     else if (organism=="hs") {
       library(org.Hs.eg.db) # human
@@ -267,30 +277,38 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
                    OrgDb        = org.Hs.eg.db,
                    keyType = "ENTREZID",
                    ont          = "BP",
-                   nPerm        = 1000,
+                   # nPerm        = 1000,
                    minGSSize    = 10,
-                   maxGSSize    = 500,
+                   maxGSSize    = 1000,
                    pvalueCutoff = pvalueCutoff,
-                   pAdjustMethod = pAdjustMethod,
-                   by = "fgsea", #fgsea, DOSE
+                   # pAdjustMethod = pAdjustMethod,
+                   # by = "fgsea", #fgsea, DOSE
                    verbose      = F)
       kk <- gseKEGG(geneList     = geneList2,
-                    organism     = 'hsa', #hsa
-                    nPerm        = 1000,
+                    # organism     = 'hsa', #hsa
+                    # nPerm        = 1000,
                     minGSSize    = 10,
+                    maxGSSize = 1000,
                     pvalueCutoff = pvalueCutoff,
-                    pAdjustMethod = pAdjustMethod,
-                    by = "fgsea",
+                    # pAdjustMethod = pAdjustMethod,
+                    # by = "fgsea",
                     verbose      = F)
+      Reactomep <- gsePathway(geneList2,
+                              # nPerm = 1000,
+                              minGSSize = 10,
+                              maxGSSize = 1000,
+                              pvalueCutoff = pvalueCutoff)
     }
     else {
       stop("only support hs and mm now!")
     }
     if (nrow(ego@result) > 0) { go_list[[i]] <- ego }
     if (nrow(kk@result) > 0) { kegg_list[[i]] <- kk }
+    if (nrow(Reactomep@result) > 0) { reactome_list[[i]] <- Reactomep }
   }
   gsea_list[["go_list"]] <- go_list
   gsea_list[["kegg_list"]] <- kegg_list
+  gsea_list[["reactome_list"]] <- reactome_list
   gsea_list
 }
 
