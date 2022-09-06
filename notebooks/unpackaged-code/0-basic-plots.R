@@ -8,6 +8,10 @@
 # example_col <- rev(brewer.pal(10,"Set3"))
 # example_col <- brewer.pal(5,"Set2")
 
+library(ggplot2)
+DoHeatmap(object = pbmc_small) + scale_fill_gradientn(colors = c("blue", "white", "red"))
+library(viridis)
+DoHeatmap(object = pbmc_small) + scale_fill_viridis()
 
 # geom_point with geom_label_repel
 # path: EllyLab/human/bulkRNA/bulk%20RNA-seq.ipynb
