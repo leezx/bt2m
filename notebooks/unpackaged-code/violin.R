@@ -5,7 +5,7 @@
 ## remove the x-axis text and tick
 ## plot.margin to adjust the white space between each plot.
 ## ... pass any arguments to VlnPlot in Seurat
-StackedVlnPlot.rowCluster <- function(obj, features,
+StackedVlnPlot.rowCluster <- function(obj, features, angle.gene = "30",
                            pt.size = 0,
                            plot.margin = unit(c(-0.75, 0, -0.75, 0), "cm"),
                            ...) {
@@ -20,7 +20,7 @@ StackedVlnPlot.rowCluster <- function(obj, features,
       theme(legend.position = "none",
             axis.text.y = element_blank(),
             # axis.ticks.x = element_blank(),
-            axis.title.x = element_text(size = 13, angle = 30, face = "italic", vjust = 0.5),
+            axis.title.x = element_text(size = 13, angle = angle.gene, face = "italic", vjust = 0.5),
             axis.title.y = element_text(size = 12, angle = 0, face = "plain", vjust = 0.5),
             axis.text.x = element_text(size = 8, face = "plain"),
             plot.margin = plot.margin ) & coord_flip()
