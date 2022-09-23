@@ -1,6 +1,6 @@
 
 # quickly read large txt file to data.frame, matrix, or dgCMatrix
-fast.read.txt<- function(fileName, sep=",", format="dataframe") {
+fast.read.txt <- function(fileName, sep=",", format="dataframe") {
   tmp.raw <- data.table::fread(fileName, sep=sep)
   # get rowname
   tmp.raw <- as.data.frame(tmp.raw)
