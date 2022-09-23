@@ -1,4 +1,25 @@
 
+# quickly read large txt file to data.frame, matrix, or dgCMatrix
+fast.read.txt<- function(fileName, sep=",", format="dataframe") {
+  tmp.raw <- data.table::fread(fileName, sep=sep)
+  # get rowname
+  tmp.raw <- as.data.frame(tmp.raw)
+  tmp.raw <- tmp.raw[!duplicated(tmp.raw[,1]),]
+  rownames(tmp.raw) <- tmp.raw[,1]
+  tmp.raw[,1] <- NULL
+  # output format
+  if (format=="dataframe") {
+    return(tmp.raw)
+    } else if (format=="matrix") {
+      return(as.matrix(tmp.raw))
+    } else if (format=="dgCMatrix") {
+      library(Matrix)
+      return(as(as.matrix(tmp.raw), "dgCMatrix"))
+    } else {
+      stop("please input correct format!!!")
+    }
+}
+
 # compress gene expression for seurat
 compress.expression.seurat <- function(seuratObj, compress.group) {
   # too slow
