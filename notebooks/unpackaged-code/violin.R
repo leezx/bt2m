@@ -96,6 +96,8 @@ StackedVlnPlot.rowGene <- function(obj, features,
   return(p)
 }
 
+# example: EllyLab/mouse/singleCell/case/Kif7_ENCC/Kif7-integration/1-integration_public_and_Kif7.ipynb
+# example: EllyLab/mouse/singleCell/case/Vcl_ENCC/Vcl_ENCCs_aggregate_analysis.ipynb#
 #' Draw violin plot
 #' @param exprData the expression matrix to be used
 #' @param cellAnno the annotation of the cells
