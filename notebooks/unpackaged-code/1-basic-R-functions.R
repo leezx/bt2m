@@ -14,6 +14,8 @@ HT29.seuset$gene <- unlist(lapply(HT29.seuset$NT, function(x) {
   strsplit(x, split = "-")[[1]][1]
 }))
 
+# multiple intersect
+Reduce(intersect, list(a,b,c))
 
 ## system operation
 dir.create()
