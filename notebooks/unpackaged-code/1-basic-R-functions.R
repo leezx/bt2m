@@ -25,10 +25,15 @@ list.files()
 object.size()
 format(object.size(merged.seuset), units = "auto")
 
+# calculate time
 start_time <- Sys.time()
 # do something
 end_time <- Sys.time()
 end_time - start_time
+
+# calculate time
+t0 <- proc.time()
+proc.time() - t0
 
 # linux
 ## remove strange characters
