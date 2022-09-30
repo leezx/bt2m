@@ -1,4 +1,8 @@
 
+# git
+git config --global user.email "zxlee@hku.hk"
+git config --global user.name "leezx"
+
 # R
 ## quick
 options(warn=-1)
