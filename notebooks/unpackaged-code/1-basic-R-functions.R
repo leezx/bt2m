@@ -35,6 +35,9 @@ end_time - start_time
 t0 <- proc.time()
 proc.time() - t0
 
+# quantile
+quantile(,probs = c(0.99))
+
 # linux
 ## remove strange characters
 ## awk '{ gsub(/\xef\xbb\xbf/,""); print }' library.csv
