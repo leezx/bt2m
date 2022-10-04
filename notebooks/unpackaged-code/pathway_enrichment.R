@@ -1,5 +1,75 @@
 # source("https://github.com/leezx/iterbi/raw/main/notebooks/unpackaged-code/pathway_enrichment.R")
 
+#' GO KEGG ORA analysis
+#' @param geneList a gene list
+#' @param organism organism (hs and mm)
+#'
+#' @return a list with GO and KEGG annotation result (clusterProfiler format)
+#' @export
+#' @examples
+#' result <- ora.go.kegg.clusterProfiler(geneList = new_moduleList, organism="mm")
+#'
+ora.go.kegg.clusterProfiler <- function(geneList=markerList, organism="hs") {
+  library(clusterProfiler)
+  go_list <- list()
+  kegg_list <- list()
+  nameList <- names(geneList)
+  if (is.null(nameList)) {
+    print("no name for the gene list!!!\n")
+    nameList <- 1:length(geneList)
+  }
+  for (i in nameList) {
+    genes <- geneList[[i]]
+    projectName <- i
+    if (organism=="mm") {
+      library(org.Mm.eg.db) # mouse
+      gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Mm.eg.db)
+      ego <- enrichGO(gene      = gene.df$ENTREZID,
+                      #universe      = genes, # SYMBOL
+                      keyType       = "ENTREZID",
+                      OrgDb         = org.Mm.eg.db,
+                      ont           = "BP",
+                      pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.01,
+                      qvalueCutoff  = 0.05,
+                      readable      = TRUE)
+      # remove duplications # too slow
+      # ego <- clusterProfiler::simplify(ego, cutoff=0.7, by="p.adjust", select_fun=min)
+      # drop top 3 level
+      # ego <- dropGO(ego, level = c(1,2))
+      go_list[[i]] <- ego
+      kk <- enrichKEGG(gene = gene.df$ENTREZID, organism = 'mmu', pvalueCutoff = 0.05)
+      # kk$genes <- unlist(lapply(kk$geneID, ID2gene))
+      kegg_list[[i]] <- kk
+    }
+    else if (organism=="hs") {
+      library(org.Hs.eg.db)
+      gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Hs.eg.db)
+      ego <- enrichGO(gene      = gene.df$ENTREZID,
+                      #universe      = genes, # SYMBOL
+                      keyType       = "ENTREZID",
+                      OrgDb         = org.Hs.eg.db,
+                      ont           = "BP",
+                      pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.01,
+                      qvalueCutoff  = 0.05,
+                      readable      = TRUE)
+      # remove duplications
+      # too slow
+      # ego <- clusterProfiler::simplify(ego, cutoff=0.7, by="p.adjust", select_fun=min)
+      # drop top 3 level
+      # ego <- dropGO(ego, level = c(1,2))
+      go_list[[i]] <- ego
+      kk <- enrichKEGG(gene = gene.df$ENTREZID, organism = 'hsa', pvalueCutoff = 0.05)
+      # kk$genes <- unlist(lapply(kk$geneID, ID2gene))
+      kegg_list[[i]] <- kk
+    }
+    else {stop("only support hs and mm now!")}
+  }
+  return(list("go_list"=go_list, "kegg_list"=kegg_list))
+}
+
+
 # get genes from specific GO terms
 get_GO_data <- function(OrgDb, ont, keytype) {
   library(GO.db)
@@ -313,74 +383,6 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
   gsea_list
 }
 
-#' GO KEGG ORA analysis
-#' @param geneList a gene list
-#' @param organism organism (hs and mm)
-#'
-#' @return a list with GO and KEGG annotation result (clusterProfiler format)
-#' @export
-#' @examples
-#' result <- ora.go.kegg.clusterProfiler(geneList = new_moduleList, organism="mm")
-#'
-ora.go.kegg.clusterProfiler <- function(geneList=markerList, organism="hs") {
-  library(clusterProfiler)
-  go_list <- list()
-  kegg_list <- list()
-  nameList <- names(geneList)
-  if (is.null(nameList)) {
-    print("no name for the gene list!!!\n")
-    nameList <- 1:length(geneList)
-  }
-  for (i in nameList) {
-    genes <- geneList[[i]]
-    projectName <- i
-    if (organism=="mm") {
-      library(org.Mm.eg.db) # mouse
-      gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Mm.eg.db)
-      ego <- enrichGO(gene      = gene.df$ENTREZID,
-                      #universe      = genes, # SYMBOL
-                      keyType       = "ENTREZID",
-                      OrgDb         = org.Mm.eg.db,
-                      ont           = "BP",
-                      pAdjustMethod = "BH",
-                      pvalueCutoff  = 0.01,
-                      qvalueCutoff  = 0.05,
-                      readable      = TRUE)
-      # remove duplications # too slow
-      # ego <- clusterProfiler::simplify(ego, cutoff=0.7, by="p.adjust", select_fun=min)
-      # drop top 3 level
-      # ego <- dropGO(ego, level = c(1,2))
-      go_list[[i]] <- ego
-      kk <- enrichKEGG(gene = gene.df$ENTREZID, organism = 'mmu', pvalueCutoff = 0.05)
-      # kk$genes <- unlist(lapply(kk$geneID, ID2gene))
-      kegg_list[[i]] <- kk
-    }
-    else if (organism=="hs") {
-      library(org.Hs.eg.db)
-      gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Hs.eg.db)
-      ego <- enrichGO(gene      = gene.df$ENTREZID,
-                      #universe      = genes, # SYMBOL
-                      keyType       = "ENTREZID",
-                      OrgDb         = org.Hs.eg.db,
-                      ont           = "BP",
-                      pAdjustMethod = "BH",
-                      pvalueCutoff  = 0.01,
-                      qvalueCutoff  = 0.05,
-                      readable      = TRUE)
-      # remove duplications
-      # too slow
-      # ego <- clusterProfiler::simplify(ego, cutoff=0.7, by="p.adjust", select_fun=min)
-      # drop top 3 level
-      # ego <- dropGO(ego, level = c(1,2))
-      go_list[[i]] <- ego
-      kk <- enrichKEGG(gene = gene.df$ENTREZID, organism = 'hsa', pvalueCutoff = 0.05)
-      # kk$genes <- unlist(lapply(kk$geneID, ID2gene))
-      kegg_list[[i]] <- kk
-    }
-    else {stop("only support hs and mm now!")}
-  }
-  return(list("go_list"=go_list, "kegg_list"=kegg_list))
-}
 
 #' Get the genes of interested GO terms by some key words
 #' @param organism organism (hs and mm)

@@ -150,40 +150,7 @@ DEG.cluster.list <- function(seuratObj, cluster.list, ident.1 = "Vcl cKO", ident
     return(DEGs)
 }
 
-#' A general function to identify DEGs between case and control
-DEG.1by1 <- function(seuratObj, ident.1 = "Vcl cKO", ident.2 = "Control", assay = "RNA") {
-    DEGs <- list()
-    for (i in unique(seuratObj@active.ident)) {
-        message(sprintf("identifying DEGs in %s between %s and %s...", i, ident.1, ident.2))
-        tmp.seuratObj <- subset(seuratObj, subset = cluster == i)
-        tmp.seuratObj@active.ident <- tmp.seuratObj$group
-        tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F,
-                                min.pct = 0, min.diff.pct = "-Inf", logfc.threshold = 0, assay = assay)
-        if(dim(tmp.DEGs)[1]<1) {
-          message(sprintf("skipping %s, no DEGs found...", i))
-          next
-        }
-        DEGs[[i]] <- add.missing.DEGs(tmp.DEGs, rownames(tmp.seuratObj@assays$RNA@counts))
-        # fill emplty genes
-        tmp.empty <- rowSums(DEGs[[i]])==0
-        DEGs[[i]][tmp.empty,]$p_val <- 1
-        DEGs[[i]][tmp.empty,]$p_val_adj <- 1
-        # add gene column
-        DEGs[[i]]$gene <- rownames(DEGs[[i]])
-        # add log2FC and correlation
-        cells_1 <- rownames(subset(seuratObj@meta.data, cluster==i & group==ident.2))
-        cells_2 <- rownames(subset(seuratObj@meta.data, cluster==i & group==ident.1))
-        log2fc <- log2(rowMeans(seuratObj@assays$RNA@data[,cells_2])+1) - log2(rowMeans(seuratObj@assays$RNA@data[,cells_1])+1)
-        corM <- cor(t(as.matrix(seuratObj@assays$RNA@data[,c(cells_1,cells_2)])), c(rep(0, length.out = length(cells_1)),
-                                                                       rep(1, length.out = length(cells_2))
-                                                                       ))
-        corM[is.na(corM)] <- 0
-        DEGs[[i]]$log2FC <- log2fc[DEGs[[i]]$gene]
-        DEGs[[i]]$correlation <- as.data.frame(corM)[DEGs[[i]]$gene,]
-        #
-    }
-    return(DEGs)
-}
+
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Functions for plotting
