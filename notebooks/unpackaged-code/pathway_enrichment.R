@@ -329,7 +329,7 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
                     # by = "fgsea",
                     verbose      = F)
       # gseKEGG(geneRank, nPerm = 1000, minGSSize = 10, maxGSSize = 1000, pvalueCutoff=1)
-      Reactomep <- gsePathway(geneList2,
+      Reactomep <- ReactomePA::gsePathway(geneList2,
                               # nPerm = 1000,
                               minGSSize = 10,
                               maxGSSize = 1000,
