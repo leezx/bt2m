@@ -319,7 +319,7 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
       # gseGO(geneRank, 'org.Hs.eg.db', keyType = "ENTREZID", ont="all", nPerm = 1000, minGSSize = 10,
       # maxGSSize = 1000, pvalueCutoff=1)
       kk <- gseKEGG(geneList     = geneList2,
-                    # organism     = 'mmu', #hsa
+                    organism     = 'mmu', #hsa
                     # nPerm        = 1000,
                     minGSSize    = 10,
                     maxGSSize = 1000,
@@ -356,7 +356,7 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
                    # by = "fgsea", #fgsea, DOSE
                    verbose      = F)
       kk <- gseKEGG(geneList     = geneList2,
-                    # organism     = 'hsa', #hsa
+                    organism     = 'hsa', #hsa
                     # nPerm        = 1000,
                     minGSSize    = 10,
                     maxGSSize = 1000,
