@@ -330,12 +330,12 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
                     verbose      = F)
       # gseKEGG(geneRank, nPerm = 1000, minGSSize = 10, maxGSSize = 1000, pvalueCutoff=1)
       Reactomep <- ReactomePA::gsePathway(geneList2,
+                              organism = "mouse",
                               # nPerm = 1000,
                               minGSSize = 10,
                               maxGSSize = 1000,
                               pvalueCutoff = pvalueCutoff)
-    }
-    else if (organism=="hs") {
+    } else if (organism=="hs") {
       library(org.Hs.eg.db) # human
       gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Hs.eg.db)
       gene.df <- gene.df[!duplicated(gene.df$ENTREZID),]
@@ -365,13 +365,13 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
                     # pAdjustMethod = pAdjustMethod,
                     # by = "fgsea",
                     verbose      = F)
-      Reactomep <- gsePathway(geneList2,
+      Reactomep <- ReactomePA::gsePathway(geneList2,
+                              organism = "human",
                               # nPerm = 1000,
                               minGSSize = 10,
                               maxGSSize = 1000,
                               pvalueCutoff = pvalueCutoff)
-    }
-    else {
+    } else {
       stop("only support hs and mm now!")
     }
     if (nrow(ego@result) > 0) { go_list[[i]] <- ego }
