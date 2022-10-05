@@ -372,7 +372,7 @@ gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor
                               maxGSSize = 1000,
                               pvalueCutoff = pvalueCutoff)
     } else {
-      stop("only support hs and mm now!")
+      stop("only support hs and mm now!!!")
     }
     if (nrow(ego@result) > 0) { go_list[[i]] <- ego }
     if (nrow(kk@result) > 0) { kegg_list[[i]] <- kk }
