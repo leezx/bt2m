@@ -282,6 +282,7 @@ gsea.ID2gene <- function(ID, organism="hs", returnVector=T) {
 gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor", organism="hs", pvalueCutoff = 1) {
   pAdjustMethod = "BH";
   library(clusterProfiler)
+  library(ReactomePA)
   go_list <- list()
   kegg_list <- list()
   gsea_list <- list()
