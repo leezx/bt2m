@@ -42,6 +42,11 @@ proc.time() - t0
 # quantile
 quantile(,probs = c(0.99))
 
+# print message and progress for large job
+message(paste("We are now at", tmp.level.index, sep = " "))
+message(sprintf("switch %s %s at level %s", former.child, latter.child, tmp.level))
+
+
 # linux
 ## remove strange characters
 ## awk '{ gsub(/\xef\xbb\xbf/,""); print }' library.csv

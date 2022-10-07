@@ -70,6 +70,123 @@ ora.go.kegg.clusterProfiler <- function(geneList=markerList, organism="hs") {
 }
 
 
+#' GSEA analysis by newest fgsea
+#' @param geneList a gene list
+#' @param use.score the score used for the GSEA analysis
+#' @param organism organism (hs and mm)
+#' @param pvalueCutoff pvalueCutoff
+#'
+#' @return a list with GO and KEGG GSEA annotation result (clusterProfiler format)
+#' @export
+#' @examples
+#' gsea_list <- gsea.go.kegg.clusterProfiler(geneList = pheno_DEGs, use.score = "cor", organism="mm")
+#'
+gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor", organism="hs", pvalueCutoff = 1) {
+  pAdjustMethod = "BH";
+  library(clusterProfiler)
+  library(ReactomePA)
+  go_list <- list()
+  kegg_list <- list()
+  gsea_list <- list()
+  reactome_list <- list()
+  nameList <- names(geneList)
+  if (is.null(nameList)) {
+    print("No name for the gene list!!! Will use 1:n\n")
+    nameList <- 1:length(geneList)
+  }
+  for (i in nameList) {
+    # genes <- geneList[[i]]$gene
+    genes <- rownames(geneList[[i]])
+    # projectName <- i
+    if (organism=="mm") {
+      library(org.Mm.eg.db) # mouse
+      gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Mm.eg.db)
+      gene.df <- gene.df[!duplicated(gene.df$ENTREZID),]
+      # prepare geneList
+      geneList2 = geneList[[i]][gene.df$SYMBOL,use.score]
+      names(geneList2) <- gene.df$ENTREZID
+      geneList2 = sort(geneList2, decreasing = TRUE)
+      print(length(geneList2))
+      # no result, no matter how I try
+      ego <- gseGO(geneList     = geneList2,
+                   OrgDb        = org.Mm.eg.db,
+                   keyType = "ENTREZID",
+                   ont          = "BP",
+                   # nPerm        = 1000,
+                   minGSSize    = 10,
+                   maxGSSize    = 1000,
+                   pvalueCutoff = pvalueCutoff,
+                   # pAdjustMethod = pAdjustMethod,
+                   # by = "fgsea", #fgsea, DOSE
+                   verbose      = F)
+      # gseGO(geneRank, 'org.Hs.eg.db', keyType = "ENTREZID", ont="all", nPerm = 1000, minGSSize = 10,
+      # maxGSSize = 1000, pvalueCutoff=1)
+      kk <- gseKEGG(geneList     = geneList2,
+                    organism     = 'mmu', #hsa
+                    # nPerm        = 1000,
+                    minGSSize    = 10,
+                    maxGSSize = 1000,
+                    pvalueCutoff = pvalueCutoff,
+                    # pAdjustMethod = pAdjustMethod,
+                    # by = "fgsea",
+                    verbose      = F)
+      # gseKEGG(geneRank, nPerm = 1000, minGSSize = 10, maxGSSize = 1000, pvalueCutoff=1)
+      Reactomep <- ReactomePA::gsePathway(geneList2,
+                              organism = "mouse",
+                              # nPerm = 1000,
+                              minGSSize = 10,
+                              maxGSSize = 1000,
+                              pvalueCutoff = pvalueCutoff)
+    } else if (organism=="hs") {
+      library(org.Hs.eg.db) # human
+      gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Hs.eg.db)
+      gene.df <- gene.df[!duplicated(gene.df$ENTREZID),]
+      # prepare geneList
+      geneList2 = geneList[[i]][gene.df$SYMBOL,use.score]
+      names(geneList2) <- gene.df$ENTREZID
+      geneList2 = sort(geneList2, decreasing = TRUE)
+      print(length(geneList2))
+      # no result, no matter how I try
+      ego <- gseGO(geneList     = geneList2,
+                   OrgDb        = org.Hs.eg.db,
+                   keyType = "ENTREZID",
+                   ont          = "BP",
+                   # nPerm        = 1000,
+                   minGSSize    = 10,
+                   maxGSSize    = 1000,
+                   pvalueCutoff = pvalueCutoff,
+                   # pAdjustMethod = pAdjustMethod,
+                   # by = "fgsea", #fgsea, DOSE
+                   verbose      = F)
+      kk <- gseKEGG(geneList     = geneList2,
+                    organism     = 'hsa', #hsa
+                    # nPerm        = 1000,
+                    minGSSize    = 10,
+                    maxGSSize = 1000,
+                    pvalueCutoff = pvalueCutoff,
+                    # pAdjustMethod = pAdjustMethod,
+                    # by = "fgsea",
+                    verbose      = F)
+      Reactomep <- ReactomePA::gsePathway(geneList2,
+                              organism = "human",
+                              # nPerm = 1000,
+                              minGSSize = 10,
+                              maxGSSize = 1000,
+                              pvalueCutoff = pvalueCutoff)
+    } else {
+      stop("only support hs and mm now!!!")
+    }
+    if (nrow(ego@result) > 0) { go_list[[i]] <- ego }
+    if (nrow(kk@result) > 0) { kegg_list[[i]] <- kk }
+    if (nrow(Reactomep@result) > 0) { reactome_list[[i]] <- Reactomep }
+  }
+  gsea_list[["go_list"]] <- go_list
+  gsea_list[["kegg_list"]] <- kegg_list
+  gsea_list[["reactome_list"]] <- reactome_list
+  gsea_list
+}
+
+
 # get genes from specific GO terms
 get_GO_data <- function(OrgDb, ont, keytype) {
   library(GO.db)
@@ -266,122 +383,6 @@ gsea.ID2gene <- function(ID, organism="hs", returnVector=T) {
     genes <- paste(gene.df$SYMBOL, collapse ="/")
     genes
   }
-}
-
-#' GSEA analysis by newest fgsea
-#' @param geneList a gene list
-#' @param use.score the score used for the GSEA analysis
-#' @param organism organism (hs and mm)
-#' @param pvalueCutoff pvalueCutoff
-#'
-#' @return a list with GO and KEGG GSEA annotation result (clusterProfiler format)
-#' @export
-#' @examples
-#' gsea_list <- gsea.go.kegg.clusterProfiler(geneList = pheno_DEGs, use.score = "cor", organism="mm")
-#'
-gsea.go.kegg.clusterProfiler <- function(geneList=DEGs_list_full, use.score="cor", organism="hs", pvalueCutoff = 1) {
-  pAdjustMethod = "BH";
-  library(clusterProfiler)
-  library(ReactomePA)
-  go_list <- list()
-  kegg_list <- list()
-  gsea_list <- list()
-  reactome_list <- list()
-  nameList <- names(geneList)
-  if (is.null(nameList)) {
-    print("No name for the gene list!!! Will use 1:n\n")
-    nameList <- 1:length(geneList)
-  }
-  for (i in nameList) {
-    # genes <- geneList[[i]]$gene
-    genes <- rownames(geneList[[i]])
-    # projectName <- i
-    if (organism=="mm") {
-      library(org.Mm.eg.db) # mouse
-      gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Mm.eg.db)
-      gene.df <- gene.df[!duplicated(gene.df$ENTREZID),]
-      # prepare geneList
-      geneList2 = geneList[[i]][gene.df$SYMBOL,use.score]
-      names(geneList2) <- gene.df$ENTREZID
-      geneList2 = sort(geneList2, decreasing = TRUE)
-      print(length(geneList2))
-      # no result, no matter how I try
-      ego <- gseGO(geneList     = geneList2,
-                   OrgDb        = org.Mm.eg.db,
-                   keyType = "ENTREZID",
-                   ont          = "BP",
-                   # nPerm        = 1000,
-                   minGSSize    = 10,
-                   maxGSSize    = 1000,
-                   pvalueCutoff = pvalueCutoff,
-                   # pAdjustMethod = pAdjustMethod,
-                   # by = "fgsea", #fgsea, DOSE
-                   verbose      = F)
-      # gseGO(geneRank, 'org.Hs.eg.db', keyType = "ENTREZID", ont="all", nPerm = 1000, minGSSize = 10,
-      # maxGSSize = 1000, pvalueCutoff=1)
-      kk <- gseKEGG(geneList     = geneList2,
-                    organism     = 'mmu', #hsa
-                    # nPerm        = 1000,
-                    minGSSize    = 10,
-                    maxGSSize = 1000,
-                    pvalueCutoff = pvalueCutoff,
-                    # pAdjustMethod = pAdjustMethod,
-                    # by = "fgsea",
-                    verbose      = F)
-      # gseKEGG(geneRank, nPerm = 1000, minGSSize = 10, maxGSSize = 1000, pvalueCutoff=1)
-      Reactomep <- ReactomePA::gsePathway(geneList2,
-                              organism = "mouse",
-                              # nPerm = 1000,
-                              minGSSize = 10,
-                              maxGSSize = 1000,
-                              pvalueCutoff = pvalueCutoff)
-    } else if (organism=="hs") {
-      library(org.Hs.eg.db) # human
-      gene.df <- bitr(genes, fromType = "SYMBOL", toType = c("ENSEMBL", "ENTREZID"), OrgDb = org.Hs.eg.db)
-      gene.df <- gene.df[!duplicated(gene.df$ENTREZID),]
-      # prepare geneList
-      geneList2 = geneList[[i]][gene.df$SYMBOL,use.score]
-      names(geneList2) <- gene.df$ENTREZID
-      geneList2 = sort(geneList2, decreasing = TRUE)
-      print(length(geneList2))
-      # no result, no matter how I try
-      ego <- gseGO(geneList     = geneList2,
-                   OrgDb        = org.Hs.eg.db,
-                   keyType = "ENTREZID",
-                   ont          = "BP",
-                   # nPerm        = 1000,
-                   minGSSize    = 10,
-                   maxGSSize    = 1000,
-                   pvalueCutoff = pvalueCutoff,
-                   # pAdjustMethod = pAdjustMethod,
-                   # by = "fgsea", #fgsea, DOSE
-                   verbose      = F)
-      kk <- gseKEGG(geneList     = geneList2,
-                    organism     = 'hsa', #hsa
-                    # nPerm        = 1000,
-                    minGSSize    = 10,
-                    maxGSSize = 1000,
-                    pvalueCutoff = pvalueCutoff,
-                    # pAdjustMethod = pAdjustMethod,
-                    # by = "fgsea",
-                    verbose      = F)
-      Reactomep <- ReactomePA::gsePathway(geneList2,
-                              organism = "human",
-                              # nPerm = 1000,
-                              minGSSize = 10,
-                              maxGSSize = 1000,
-                              pvalueCutoff = pvalueCutoff)
-    } else {
-      stop("only support hs and mm now!!!")
-    }
-    if (nrow(ego@result) > 0) { go_list[[i]] <- ego }
-    if (nrow(kk@result) > 0) { kegg_list[[i]] <- kk }
-    if (nrow(Reactomep@result) > 0) { reactome_list[[i]] <- Reactomep }
-  }
-  gsea_list[["go_list"]] <- go_list
-  gsea_list[["kegg_list"]] <- kegg_list
-  gsea_list[["reactome_list"]] <- reactome_list
-  gsea_list
 }
 
 
