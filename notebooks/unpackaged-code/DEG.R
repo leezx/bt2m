@@ -1,23 +1,24 @@
 # source("https://github.com/leezx/iterbi/raw/main/notebooks/unpackaged-code/DEG.R")
 
 #' A general function to identify DEGs between case and control
-cluster_DEG_twoGroups <- function(seuratObj, cluster, group_by, ident.1, ident.2, pooled = T, 
+cluster_DEG_twoGroups <- function(seuratObj, cluster, group_by, ident.ref, ident.query, pooled = T, 
                                   assay = "RNA", slot = "data") {
+    options(warn=-1)
     DEGs <- list()
     seuratObj[["cluster"]] <- seuratObj[[cluster]]
     seuratObj[["group_by"]] <- seuratObj[[group_by]]
     for (i in unique(seuratObj$cluster)) {
-        message(sprintf("identifying DEGs in %s between %s (%s and %s)...", i, group_by, ident.1, ident.2))
+        message(sprintf("identifying DEGs in %s between %s (%s and %s)...", i, group_by, ident.query, ident.ref))
         tmp.seuratObj <- subset(seuratObj, subset = cluster == i)
         tmp.seuratObj@active.ident <- tmp.seuratObj$group_by
         #
-        # tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.1, ident.2 = ident.2, only.pos = F,
+        # tmp.DEGs <- FindMarkers(tmp.seuratObj, ident.1 = ident.query, ident.2 = ident.ref, only.pos = F,
         #                        min.pct = 0, min.diff.pct = "-Inf", logfc.threshold = 0, assay = assay)
         #
         tmp.DEGs <- presto:::wilcoxauc.Seurat(X = tmp.seuratObj, group_by = 'group_by',
                                                  assay = slot, seurat_assay = assay)
         # tmp.DEGs <- tmp.DEGs[1:(nrow(tmp.DEGs)/2),] # only take 1 group
-        tmp.DEGs <- subset(tmp.DEGs, group == ident.1)
+        tmp.DEGs <- subset(tmp.DEGs, group == ident.query)
         rownames(tmp.DEGs) <- tmp.DEGs$feature
         # return(tmp.DEGs) # testing
         if(dim(tmp.DEGs)[1]<1) {
@@ -33,8 +34,8 @@ cluster_DEG_twoGroups <- function(seuratObj, cluster, group_by, ident.1, ident.2
         # add gene column
         DEGs[[i]]$gene <- rownames(DEGs[[i]])
         # add log2FC and correlation
-        cells_1 <- rownames(subset(seuratObj@meta.data, cluster==i & group_by==ident.2))
-        cells_2 <- rownames(subset(seuratObj@meta.data, cluster==i & group_by==ident.1))
+        cells_1 <- rownames(subset(seuratObj@meta.data, cluster==i & group_by==ident.ref))
+        cells_2 <- rownames(subset(seuratObj@meta.data, cluster==i & group_by==ident.query))
         log2fc <- log2(rowMeans(seuratObj@assays$RNA@data[,cells_2])+1) - log2(rowMeans(seuratObj@assays$RNA@data[,cells_1])+1)
         corM <- cor(t(as.matrix(seuratObj@assays$RNA@data[,c(cells_1,cells_2)])), c(rep(0, length.out = length(cells_1)),
                                                                        rep(1, length.out = length(cells_2))
@@ -50,12 +51,12 @@ cluster_DEG_twoGroups <- function(seuratObj, cluster, group_by, ident.1, ident.2
         tmp.DEGs <- presto:::wilcoxauc.Seurat(X = seuratObj, group_by = 'group_by',
                                                  assay = slot, seurat_assay = assay)
         # tmp.DEGs <- tmp.DEGs[1:(nrow(tmp.DEGs)/2),] # only take 1 group
-        tmp.DEGs <- subset(tmp.DEGs, group == ident.1)
+        tmp.DEGs <- subset(tmp.DEGs, group == ident.query)
         rownames(tmp.DEGs) <- tmp.DEGs$feature
         DEGs[[i]] <- tmp.DEGs
         DEGs[[i]]$gene <- rownames(DEGs[[i]])
-        cells_1 <- rownames(subset(seuratObj@meta.data, group_by==ident.2))
-        cells_2 <- rownames(subset(seuratObj@meta.data, group_by==ident.1))
+        cells_1 <- rownames(subset(seuratObj@meta.data, group_by==ident.ref))
+        cells_2 <- rownames(subset(seuratObj@meta.data, group_by==ident.query))
         log2fc <- log2(rowMeans(seuratObj@assays$RNA@data[,cells_2])+1) - log2(rowMeans(seuratObj@assays$RNA@data[,cells_1])+1)
         corM <- cor(t(as.matrix(seuratObj@assays$RNA@data[,c(cells_1,cells_2)])), c(rep(0, length.out = length(cells_1)),
                                                                        rep(1, length.out = length(cells_2))

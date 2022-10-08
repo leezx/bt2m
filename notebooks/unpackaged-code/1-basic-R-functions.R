@@ -4,7 +4,13 @@ git config --global user.email "zxlee@hku.hk"
 git config --global user.name "leezx"
 
 # R
-## quick
+## save to 
+library(xlsx)
+tmp.file <- "msigdb.gsea.ApcKO.xlsx"
+write.xlsx(all.sample.NES.hallmark, file=tmp.file, sheetName="hallmark", row.names=T)
+write.xlsx(all.sample.NES.GOBP, file=tmp.file, sheetName="GO_BP", append=TRUE, row.names=T)
+
+## supress warn
 options(warn=-1)
 
 ## quick if
