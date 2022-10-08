@@ -9,6 +9,21 @@ library(xlsx)
 tmp.file <- "msigdb.gsea.ApcKO.xlsx"
 write.xlsx(all.sample.NES.hallmark, file=tmp.file, sheetName="hallmark", row.names=T)
 write.xlsx(all.sample.NES.GOBP, file=tmp.file, sheetName="GO_BP", append=TRUE, row.names=T)
+# batch
+out.file <- "known.gsea.gmt.xlsx"
+tmp.list <- gsea.list
+sample.list <- unique(names(tmp.list))
+for (i in sample.list) {
+    print(i)
+    tmp.df <- tmp.list[[i]]
+    # tmp.df <- subset(tmp.df, pvalue<0.05)
+    print(dim(tmp.df))
+    if (i==sample.list[1]) {
+        write.xlsx(tmp.df, file=out.file, sheetName=i, row.names=FALSE)
+    } else {
+        write.xlsx(tmp.df, file=out.file, sheetName=i, append=TRUE, row.names=FALSE)
+    }
+}
 
 ## supress warn
 options(warn=-1)

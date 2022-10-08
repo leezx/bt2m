@@ -66,6 +66,13 @@ cluster_DEG_twoGroups <- function(seuratObj, cluster, group_by, ident.ref, ident
         DEGs[[i]]$correlation <- as.data.frame(corM)[DEGs[[i]]$gene,]
     }
     return(DEGs)
+    # check DEGs
+    # HBSO.DEG.1by1.sig <- lapply(HBSO.DEG.1by1, function(x) {
+    # y <- subset(x, padj<0.05 & abs(correlation)>0.1)
+    # y[order(y$padj, decreasing = F),c("auc","pval","padj","logFC","correlation")]
+    # options(repr.plot.width=10, repr.plot.height=5)
+    # VlnPlot(HBSO.combined, features = c("CHCHD2", "C1QL4"), group.by = "subtype", split.by = "sample", pt.size = 0, combine = F)
+})
 }
 
 
