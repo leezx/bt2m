@@ -19,9 +19,9 @@ for (i in sample.list) {
     # tmp.df <- subset(tmp.df, pvalue<0.05)
     print(dim(tmp.df))
     if (i==sample.list[1]) {
-        write.xlsx(tmp.df, file=out.file, sheetName=i, row.names=FALSE)
+        write.xlsx(tmp.df, file=out.file, sheetName=i, row.names=T)
     } else {
-        write.xlsx(tmp.df, file=out.file, sheetName=i, append=TRUE, row.names=FALSE)
+        write.xlsx(tmp.df, file=out.file, sheetName=i, append=TRUE, row.names=T)
     }
 }
 
