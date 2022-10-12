@@ -7,7 +7,7 @@
 # https://www.stat.ubc.ca/~jenny/STAT545A/block14_colors.html
 library(RColorBrewer)
 example_col <- rev(brewer.pal(10,"Set3"))
-example_col <- brewer.pal(5,"Set2")
+example_col <- RColorBrewer::brewer.pal(5,"Set2")
 
 library(ggplot2)
 DoHeatmap(object = pbmc_small) + scale_fill_gradientn(colors = c("blue", "white", "red"))
