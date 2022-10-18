@@ -9,6 +9,24 @@ library(xlsx)
 tmp.file <- "msigdb.gsea.ApcKO.xlsx"
 write.xlsx(all.sample.NES.hallmark, file=tmp.file, sheetName="hallmark", row.names=T)
 write.xlsx(all.sample.NES.GOBP, file=tmp.file, sheetName="GO_BP", append=TRUE, row.names=T)
+#
+DEG.sig <- lapply(DEGs_list_full, function(x) {
+    subset(x, pVals<0.05 & abs(log2FC)>0)[,c("gene","pVals","log2FC")]
+})
+out.file <- "cluster.specific.DEGs.xlsx"
+tmp.list <- DEGs.sig
+sample.list <- unique(names(tmp.list))
+for (i in sample.list) {
+    print(i)
+    tmp.df <- tmp.list[[i]]
+    # tmp.df <- subset(tmp.df, pvalue<0.05)
+    print(dim(tmp.df))
+    if (i==sample.list[1]) {
+        xlsx::write.xlsx(tmp.df, file=out.file, sheetName=i, row.names=T)
+    } else {
+        xlsx::write.xlsx(tmp.df, file=out.file, sheetName=i, append=TRUE, row.names=T)
+    }
+}
 # batch
 out.file <- "known.gsea.gmt.xlsx"
 tmp.list <- gsea.list
