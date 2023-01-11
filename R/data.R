@@ -24,7 +24,7 @@ GetTestData <- function() {
 #' @concept data
 #' @source \url{http://bioinfo.life.hust.edu.cn/HumanTFDB/#!/download}
 #'
-"human.tfs"
+"MGI.gene.pairs"
 
 #' Mouse transcription factors
 #'
@@ -34,7 +34,7 @@ GetTestData <- function() {
 #' @concept data
 #' @source \url{http://bioinfo.life.hust.edu.cn/AnimalTFDB/#!/download}
 #'
-"mouse.tfs"
+"HGNC.gene.pairs"
 
 #' Human ligand and receptor
 #'
@@ -48,7 +48,7 @@ GetTestData <- function() {
 #' @concept data
 #' @source \url{http://www.cellchat.org/}
 #'
-"human.ligand.receptor"
+"JASPAR.motif.rmDup"
 
 #' Mouse ligand and receptor
 #'
@@ -62,7 +62,21 @@ GetTestData <- function() {
 #' @concept data
 #' @source \url{http://www.cellchat.org/}
 #'
-"mouse.ligand.receptor"
+"lr.pair.all.uniq.mm"
+
+#' Mouse ligand and receptor
+#'
+#' A list of genes used in marker annotation
+#'
+#' @format A list of two vectors
+#' \describe{
+#'   \item{mouse.ligand}{ligand genes in mouse}
+#'   \item{mouse.receptor}{receptor genes in mouse}
+#' }
+#' @concept data
+#' @source \url{http://www.cellchat.org/}
+#'
+"lr.pair.all.uniq.hs"
 
 #' Gene annotation for mouse genome
 #'
