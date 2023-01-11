@@ -49,13 +49,13 @@ see examples folder
 
 ## step 2: iteratively bifurcated clustering
 ```
-bt2m.result <- RunIterbi(seuset)
+bt2m.result <- RunBt2m(seuset)
 ```
 
 ## step 3: order and rename clusters
 ```
 bt2m.result <- OrderCluster(seuset, bt2m.result)
-bt2m.result <- RenameIterbi(bt2m.result)
+bt2m.result <- RenameBt2m(bt2m.result)
 ```
 
 ## step 4: add marker features
@@ -65,12 +65,12 @@ bt2m.result$marker_chain <- AddMarkerExpressionPct(seuset, bt2m.result$cellMeta,
 
 ## step 5: GO annotation (optional)
 ```
-bt2m.GO.anno <- IterbiEnrichGO(bt2m.result$marker_chain, organism = "hs", pvalueCutoff = 0.05, min_count = 3)
+bt2m.GO.anno <- Bt2mEnrichGO(bt2m.result$marker_chain, organism = "hs", pvalueCutoff = 0.05, min_count = 3)
 ```
 
 ## step 6: write bt2m result into Seurat object
 ```
-seuset <- WriteIterbiIntoSeurat(seuset, bt2m.result)
+seuset <- WriteBt2mIntoSeurat(seuset, bt2m.result)
 seuset@assays$bt2m$GO_chain <- bt2m.GO.anno
 ```
 

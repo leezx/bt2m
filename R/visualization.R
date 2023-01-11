@@ -39,7 +39,7 @@ PrepareExpressionMatrix <- function(seuratObj, bt2m.marker.chain, assay="RNA", s
 #' @return A color vector
 #' @export
 #'
-IterbiColors <- function() {
+Bt2mColors <- function() {
   bt2m.colors <- unique(c(brewer.pal(n = 9, name = "Set1"),
                             brewer.pal(n = 8, name = "Dark2"),
                             brewer.pal(n = 12, name = "Paired"),
@@ -72,7 +72,7 @@ DrawMarkerChainHeatmap <- function(seuratObj, bt2m.cellMeta, bt2m.marker.chain, 
   # col_fun = colorRamp2(c(-2, 0, 3), c("#FF00FF","#000000","#FFFF00")) # seurat color
   col_fun(seq(-3, 3))
   # get colors
-  bt2m.colors <- IterbiColors()
+  bt2m.colors <- Bt2mColors()
   # prepare color
   color.list <- list()
   for (i in paste("L",0:(ncol(bt2m.cellMeta)-1),sep = "")) {
@@ -122,8 +122,8 @@ DrawMarkerChainHeatmap <- function(seuratObj, bt2m.cellMeta, bt2m.marker.chain, 
 #' @return clustree object
 #' @export
 #'
-DrawIterbiClusterTree <- function(seuratObj, bt2m.cellMeta, node_text_size=7, node_size=8) {
-  seuratObj <- WriteIterbiIntoSeurat(seuratObj, bt2m.cellMeta)
+DrawBt2mClusterTree <- function(seuratObj, bt2m.cellMeta, node_text_size=7, node_size=8) {
+  seuratObj <- WriteBt2mIntoSeurat(seuratObj, bt2m.cellMeta)
   #
   # options(repr.plot.width=10, repr.plot.height=10)
   # tree <- clustree(seuratObj, prefix = "L", node_text_size = 7)
@@ -159,7 +159,7 @@ DrawMarkerChainDotplot <- function(seuratObj, bt2m.marker.chain, rmDup=T, top_n=
   top <- subset(bt2m.marker.chain.rmDup) %>%
     group_by(cluster) %>%
     dplyr::top_n(top_n, abs(correlation))
-  p1 <- DrawIterbiClusterTree(seuratObj, bt2m.cellMeta)
+  p1 <- DrawBt2mClusterTree(seuratObj, bt2m.cellMeta)
   p2 <- DotPlot(seuratObj, features = rev(top$gene), dot.scale = 7) + RotatedAxis() + ylab(NULL) + xlab(NULL)
   left.anno <- cowplot::plot_grid(NULL,p1,NULL,ncol = 1, rel_heights = rel_heights)
   # options(repr.plot.width=15, repr.plot.height=7)

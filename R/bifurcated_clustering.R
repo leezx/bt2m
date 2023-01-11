@@ -46,9 +46,9 @@ FindBifurcationResolution <- function(seuratObj, resolution.sets = 50) {
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
 #'
-IterbiBifucation.graph <- function(seuratObj, resolution.sets = 50) {
+Bt2mBifucation.graph <- function(seuratObj, resolution.sets = 50) {
   # run PCA and SNN
-  #message("run IterbiBifucation.graph...")
+  #message("run Bt2mBifucation.graph...")
   #message(paste("Processing ", nrow(seuratObj)," gene and ", ncol(seuratObj), " cells", sep = ""))
   seuratObj <- RunPCA(seuratObj, verbose = F)
   seuratObj <- FindNeighbors(seuratObj, dims = 1:10, verbose = F)
@@ -66,7 +66,7 @@ IterbiBifucation.graph <- function(seuratObj, resolution.sets = 50) {
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
 #'
-IterbiBifucation.hclust <- function(seuratObj, method="euclidean") {
+Bt2mBifucation.hclust <- function(seuratObj, method="euclidean") {
   seuratObj <- RunPCA(seuratObj, verbose = F)
   data.use <- Embeddings(object = seuratObj[["pca"]])
   if (method=="euclidean") {
@@ -89,7 +89,7 @@ IterbiBifucation.hclust <- function(seuratObj, method="euclidean") {
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
 #'
-IterbiBifucation.kmeans <- function(seuratObj, method="euclidean") {
+Bt2mBifucation.kmeans <- function(seuratObj, method="euclidean") {
   seuratObj <- RunPCA(seuratObj, verbose = F)
   data.use <- Embeddings(object = seuratObj[["pca"]])
   if (method=="euclidean") {

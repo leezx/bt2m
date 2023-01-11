@@ -9,7 +9,7 @@ OrderCluster(seuratObj, bt2m.result)
 \arguments{
 \item{seuratObj}{A Seurat object}
 
-\item{bt2m.result}{A result file from RunIterbi() function}
+\item{bt2m.result}{A result file from RunBt2m() function}
 }
 \value{
 A re-ordered list. cellMeta contains the final bifurcation for each level

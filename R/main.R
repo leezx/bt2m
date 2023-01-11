@@ -21,7 +21,7 @@ globalVariables(
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.level.num = 20,
+RunBt2m <- function(seuratObj, method = "graph", min.marker.num = 100, max.level.num = 20,
                        min.cell.count = 50, resolution.sets = 30, verbose = T) {
   # key index
   # level index: 1-20
@@ -90,9 +90,9 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
       tmp.seuratObj <- subset(seuratObj, subset = select_cells == T)
       # tmp.seuratObj <- subset(seuratObj, subset = cellName %in% tmp.cells) # can't find tmp.cells, don't know why?
       #
-      if (method == "graph") {tmp.seuratObj <- IterbiBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets)}
-      else if (method == "hclust") {tmp.seuratObj <- IterbiBifucation.hclust(tmp.seuratObj)}
-      else if (method == "kmeans") {tmp.seuratObj <- IterbiBifucation.kmeans(tmp.seuratObj)}
+      if (method == "graph") {tmp.seuratObj <- Bt2mBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets)}
+      else if (method == "hclust") {tmp.seuratObj <- Bt2mBifucation.hclust(tmp.seuratObj)}
+      else if (method == "kmeans") {tmp.seuratObj <- Bt2mBifucation.kmeans(tmp.seuratObj)}
       else {message("Please select one method in: graph, hclust, kmeans!")}
       # check clustering result
       if (length(unique(tmp.seuratObj@active.ident)) != 2) {
@@ -153,7 +153,7 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
 #' order the clusters according to similarity inside the bt2m result
 #'
 #' @param seuratObj A Seurat object
-#' @param bt2m.result A result file from RunIterbi() function
+#' @param bt2m.result A result file from RunBt2m() function
 
 #' @return A re-ordered list. cellMeta contains the final bifurcation for each level
 #' marker_chain contains all the significant markers for each cluster
@@ -240,14 +240,14 @@ OrderCluster <- function(seuratObj, bt2m.result) {
 
 #' rename the clusters inside the bt2m result
 #'
-#' @param bt2m.result A result file from RunIterbi() function
+#' @param bt2m.result A result file from RunBt2m() function
 
 #' @return A renamed list. cellMeta contains the final bifurcation for each level
 #' marker_chain contains all the significant markers for each cluster
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-RenameIterbi <- function(bt2m.result) {
+RenameBt2m <- function(bt2m.result) {
   # rename three files, bt2m.cellMeta is one type, bt2m.marker.chain and bt2m.bifucation are another type
   bt2m.cellMeta <- bt2m.result[["cellMeta"]]
   bt2m.marker.chain <- bt2m.result[["marker_chain"]]
@@ -412,7 +412,7 @@ RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
 #' @return GO annotation dataframe labeled with cluster
 #' @export
 #'
-IterbiEnrichGO <- function(bt2m.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 3) {
+Bt2mEnrichGO <- function(bt2m.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 3) {
   marker.list <- list()
   for (i in unique(bt2m.marker.chain$cluster)) {
     # print(i)
@@ -626,7 +626,7 @@ GetClusterChain <- function(bt2m.cellMeta, bt2m.bifucation, target.cluster) {
 #' @return A Seurat object contains bt2m.result. bt2m will be stored in assay data region of Seurat object ("seuratObj@assays$bt2m")
 #' @export
 #'
-WriteIterbiIntoSeurat <- function(seuratObj, bt2m.result) {
+WriteBt2mIntoSeurat <- function(seuratObj, bt2m.result) {
   # get results
   bt2m.cellMeta <- bt2m.result[["cellMeta"]]
   bt2m.marker.chain <- bt2m.result[["marker_chain"]]
