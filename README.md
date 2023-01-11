@@ -26,6 +26,14 @@ if (!require("BiocManager", quietly = TRUE))
 
 BiocManager::install('ComplexHeatmap','clusterProfiler','org.Hs.eg.db','org.Mm.eg.db')
 ```
+OR
+```
+install.packages(c('Seurat', 'dplyr', 'clustree', 'ggplot2',  'RColorBrewer', 'circlize', 'fastcluster', 'parallelDist', 'HiClimR', 'Hmisc', 'cowplot', 'plyr'))
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c('ComplexHeatmap', 'clusterProfiler', 'org.Hs.eg.db', 'org.Mm.eg.db'))
+```
 
 ## Install the bt2m package
 ```
