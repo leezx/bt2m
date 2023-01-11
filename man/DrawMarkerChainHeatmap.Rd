@@ -6,8 +6,8 @@
 \usage{
 DrawMarkerChainHeatmap(
   seuratObj,
-  iterbi.cellMeta,
-  iterbi.marker.chain,
+  bt2m.cellMeta,
+  bt2m.marker.chain,
   compare_anno = "",
   known_markers = c()
 )
@@ -15,9 +15,9 @@ DrawMarkerChainHeatmap(
 \arguments{
 \item{seuratObj}{A Seurat object}
 
-\item{iterbi.cellMeta}{iterbi.cellMeta from iterbi}
+\item{bt2m.cellMeta}{bt2m.cellMeta from bt2m}
 
-\item{iterbi.marker.chain}{iterbi.marker.chain from iterbi}
+\item{bt2m.marker.chain}{bt2m.marker.chain from bt2m}
 
 \item{compare_anno}{select a annotation in seurat object for comparision (e.g. previous annotation)}
 

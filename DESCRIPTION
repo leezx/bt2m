@@ -1,4 +1,4 @@
-Package: iterbi
+Package: bt2m
 Type: Package
 Title: A iteratively bifurcated clustering strategy for single-cell sequencing data
 Version: 0.4.9
@@ -32,5 +32,5 @@ Imports:
   plyr
 Suggests:
   testthat
-URL: https://github.com/leezx/iterbi
-BugReports: https://github.com/leezx/iterbi/issues
+URL: https://github.com/leezx/bt2m
+BugReports: https://github.com/leezx/bt2m/issues

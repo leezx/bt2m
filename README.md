@@ -1,4 +1,4 @@
-# iterbi
+# bt2m
 A iteratively bifurcated clustering method for single-cell sequencing
 
 Version: 0.4.9
@@ -27,10 +27,10 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install('ComplexHeatmap','clusterProfiler','org.Hs.eg.db','org.Mm.eg.db')
 ```
 
-## Install the iterbi package
+## Install the bt2m package
 ```
 install.packages("devtools")
-devtools::install_github("leezx/iterbi", dependencies = F)
+devtools::install_github("leezx/bt2m", dependencies = F)
 ```
 
 # Usage examples
@@ -41,29 +41,29 @@ see examples folder
 
 ## step 2: iteratively bifurcated clustering
 ```
-iterbi.result <- RunIterbi(seuset)
+bt2m.result <- RunIterbi(seuset)
 ```
 
 ## step 3: order and rename clusters
 ```
-iterbi.result <- OrderCluster(seuset, iterbi.result)
-iterbi.result <- RenameIterbi(iterbi.result)
+bt2m.result <- OrderCluster(seuset, bt2m.result)
+bt2m.result <- RenameIterbi(bt2m.result)
 ```
 
 ## step 4: add marker features
 ```
-iterbi.result$marker_chain <- AddMarkerExpressionPct(seuset, iterbi.result$cellMeta, iterbi.result$marker_chain)
+bt2m.result$marker_chain <- AddMarkerExpressionPct(seuset, bt2m.result$cellMeta, bt2m.result$marker_chain)
 ```
 
 ## step 5: GO annotation (optional)
 ```
-iterbi.GO.anno <- IterbiEnrichGO(iterbi.result$marker_chain, organism = "hs", pvalueCutoff = 0.05, min_count = 3)
+bt2m.GO.anno <- IterbiEnrichGO(bt2m.result$marker_chain, organism = "hs", pvalueCutoff = 0.05, min_count = 3)
 ```
 
-## step 6: write iterbi result into Seurat object
+## step 6: write bt2m result into Seurat object
 ```
-seuset <- WriteIterbiIntoSeurat(seuset, iterbi.result)
-seuset@assays$iterbi$GO_chain <- iterbi.GO.anno
+seuset <- WriteIterbiIntoSeurat(seuset, bt2m.result)
+seuset@assays$bt2m$GO_chain <- bt2m.GO.anno
 ```
 
 # Visualization

@@ -9,7 +9,7 @@ DrawBarplotGO(barplot_df, cluster.chain)
 \arguments{
 \item{barplot_df}{A GO annotation dataframe from clusterProfiler}
 
-\item{cluster.chain}{cluster.chain from iterbi}
+\item{cluster.chain}{cluster.chain from bt2m}
 }
 \value{
 A ggplot barplot

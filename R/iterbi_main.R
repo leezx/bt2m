@@ -2,8 +2,8 @@
 # Functions
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 globalVariables(
-  names=c("Count","Description","avg_logFC","bcg_pct","cluster","cluster_pct","correlation","iterbi.cellMeta","iterbi.marker.chain","markerList","new_cluster","old_cluster","p_val","p_val_adj","pvalue","qvalue","select_cells","seuratObj"),
-  package = "iterbi",
+  names=c("Count","Description","avg_logFC","bcg_pct","cluster","cluster_pct","correlation","bt2m.cellMeta","bt2m.marker.chain","markerList","new_cluster","old_cluster","p_val","p_val_adj","pvalue","qvalue","select_cells","seuratObj"),
+  package = "bt2m",
   add = TRUE
 )
 #' The main function to perform iteratively bifurcation clustering
@@ -35,18 +35,18 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
   # verbose <- T
   # key file 1: the cell annotation dataframe
   seuratObj$cellName <- as.character(colnames(seuratObj))
-  iterbi.cellMeta <- data.frame(row.names = seuratObj$cellName, cellName=seuratObj$cellName, stringsAsFactors = F)
+  bt2m.cellMeta <- data.frame(row.names = seuratObj$cellName, cellName=seuratObj$cellName, stringsAsFactors = F)
   # add initial one
-  iterbi.cellMeta[,"L0"] <- 1
+  bt2m.cellMeta[,"L0"] <- 1
   # add default L1-max.level.num
   for (i in paste("L", 1:max.level.num, sep = "")) {
     # print(i)
-    iterbi.cellMeta[,i] <- 0
+    bt2m.cellMeta[,i] <- 0
   }
   #
   # cannot start from specifc level, the marker list will be chaos
-  iterbi.marker.chain <- data.frame()
-  iterbi.bifucation <- data.frame()
+  bt2m.marker.chain <- data.frame()
+  bt2m.bifucation <- data.frame()
   # iteratively bifurcation until no enough markers can be found
   for (i in 0:max.level.num) {
     # prevoius.level.index <- paste("L",i-1,sep = "")
@@ -56,15 +56,15 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
     # small testing
     # if (tmp.level.index=="L3") break
     #
-    for (j in unique(iterbi.cellMeta[,tmp.level.index])) {
+    for (j in unique(bt2m.cellMeta[,tmp.level.index])) {
       # print(j)
       tmp.cluster.index <- paste(tmp.level.index, j, sep = "_")
       # get cells
       # message("get tmp.cells...")
-      tmp.cells <- iterbi.cellMeta[iterbi.cellMeta[,tmp.level.index]==j,]$cellName
+      tmp.cells <- bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$cellName
       # if there are no marker for the previous level, endpoint
       if (grepl("end", j)) {
-        iterbi.cellMeta[tmp.cells, next.level.index] <- j
+        bt2m.cellMeta[tmp.cells, next.level.index] <- j
         # message(paste(tmp.cluster.index, "was an end point, skipping...", sep = " "))
         next
       } else {
@@ -75,7 +75,7 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
       if (length(tmp.cells) <= min.cell.count) {
         # exit when cells is less than 50
         message(paste("only have ", length(tmp.cells), " cells, set it as an end node", sep=""))
-        iterbi.cellMeta[tmp.cells, next.level.index] <- paste("end", next.level.index, 2*j-1, sep = "-")
+        bt2m.cellMeta[tmp.cells, next.level.index] <- paste("end", next.level.index, 2*j-1, sep = "-")
         # message(paste(tmp.cluster.index, "has no enough cells, this is a end point...", sep = " "))
         next
       }
@@ -103,7 +103,7 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
       next.cluster.index.1 <- paste(next.level.index, 2*j-1, sep = "_")
       next.cluster.index.2 <- paste(next.level.index, 2*j, sep = "_")
       # write annotation to the next level
-      iterbi.cellMeta[tmp.seuratObj$cellName, next.level.index] <- as.integer(tmp.seuratObj@active.ident) + 2*(j-1)
+      bt2m.cellMeta[tmp.seuratObj$cellName, next.level.index] <- as.integer(tmp.seuratObj@active.ident) + 2*(j-1)
       # get markers
       binary_markers <- IdentifyBinaryMarkers(tmp.seuratObj)
       b1.markers <- binary_markers[["b1"]]
@@ -112,82 +112,82 @@ RunIterbi <- function(seuratObj, method = "graph", min.marker.num = 100, max.lev
       if (nrow(b1.markers) >= min.marker.num) {
         b1.markers$parent <- tmp.cluster.index
         b1.markers$cluster <- next.cluster.index.1
-        iterbi.marker.chain <- rbind(iterbi.marker.chain, b1.markers)
+        bt2m.marker.chain <- rbind(bt2m.marker.chain, b1.markers)
       }
       if (nrow(b2.markers) >= min.marker.num) {
         b2.markers$parent <- tmp.cluster.index
         b2.markers$cluster <- next.cluster.index.2
-        iterbi.marker.chain <- rbind(iterbi.marker.chain, b2.markers)
+        bt2m.marker.chain <- rbind(bt2m.marker.chain, b2.markers)
       }
       # final judgement
       if ((nrow(b1.markers) < min.marker.num) && (nrow(b2.markers) < min.marker.num)) {
         # message(paste(tmp.cluster.index, "has no marker, this is a end point...", sep = " "))
         # set end point (take care, what the name is, when no marker)
         # must add "end" and "level" to avoid the mixture between levels
-        iterbi.cellMeta[tmp.cells, next.level.index] <- paste("end", next.level.index, 2*j-1, sep = "-")
+        bt2m.cellMeta[tmp.cells, next.level.index] <- paste("end", next.level.index, 2*j-1, sep = "-")
       } else {
         tmp.bifucation <- data.frame(parent=tmp.cluster.index, child1=next.cluster.index.1, child2=next.cluster.index.2)
-        iterbi.bifucation <- rbind(iterbi.bifucation, tmp.bifucation)
+        bt2m.bifucation <- rbind(bt2m.bifucation, tmp.bifucation)
         if (verbose) message(sprintf("Successfully split %s to %s and %s", tmp.cluster.index,
                                      next.cluster.index.1, next.cluster.index.2))
       }
     }
     # exist running when all cluster are end points
-    if (sum(!grepl("end", unique(iterbi.cellMeta[,tmp.level.index]))) == 0) {
+    if (sum(!grepl("end", unique(bt2m.cellMeta[,tmp.level.index]))) == 0) {
       message("Bifurcating stopped! No more clusters can be split")
       break
     }
   }
   # remove emplty levels
-  iterbi.cellMeta <- iterbi.cellMeta[,colSums(iterbi.cellMeta!=0)!=0]
-  iterbi.cellMeta$cellName <- NULL
+  bt2m.cellMeta <- bt2m.cellMeta[,colSums(bt2m.cellMeta!=0)!=0]
+  bt2m.cellMeta$cellName <- NULL
   # remove same columns
-  iterbi.cellMeta <- iterbi.cellMeta[,!duplicated(t(iterbi.cellMeta))]
+  bt2m.cellMeta <- bt2m.cellMeta[,!duplicated(t(bt2m.cellMeta))]
   # sort the df last to first, not the final one
-  for (i in ncol(iterbi.cellMeta):1) {
-    iterbi.cellMeta <- iterbi.cellMeta[order( iterbi.cellMeta[,i] ),]
+  for (i in ncol(bt2m.cellMeta):1) {
+    bt2m.cellMeta <- bt2m.cellMeta[order( bt2m.cellMeta[,i] ),]
   }
-  return(list(cellMeta=iterbi.cellMeta, marker_chain=iterbi.marker.chain, bifucation=iterbi.bifucation))
+  return(list(cellMeta=bt2m.cellMeta, marker_chain=bt2m.marker.chain, bifucation=bt2m.bifucation))
 }
 
-#' order the clusters according to similarity inside the iterbi result
+#' order the clusters according to similarity inside the bt2m result
 #'
 #' @param seuratObj A Seurat object
-#' @param iterbi.result A result file from RunIterbi() function
+#' @param bt2m.result A result file from RunIterbi() function
 
 #' @return A re-ordered list. cellMeta contains the final bifurcation for each level
 #' marker_chain contains all the significant markers for each cluster
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-OrderCluster <- function(seuratObj, iterbi.result) {
-    iterbi.cellMeta <- iterbi.result[["cellMeta"]]
-    iterbi.marker.chain <- iterbi.result[["marker_chain"]]
-    iterbi.bifucation <- iterbi.result[["bifucation"]]
+OrderCluster <- function(seuratObj, bt2m.result) {
+    bt2m.cellMeta <- bt2m.result[["cellMeta"]]
+    bt2m.marker.chain <- bt2m.result[["marker_chain"]]
+    bt2m.bifucation <- bt2m.result[["bifucation"]]
     #
-    all.exprMat <- PrepareExpressionMatrix(seuratObj, iterbi.marker.chain, assay = "RNA", slot = "data")
+    all.exprMat <- PrepareExpressionMatrix(seuratObj, bt2m.marker.chain, assay = "RNA", slot = "data")
     all.exprMat <- as.data.frame(t(all.exprMat))
-    all.exprMat <- all.exprMat[rownames(iterbi.cellMeta),]
+    all.exprMat <- all.exprMat[rownames(bt2m.cellMeta),]
     #
     # too hard, need to check the switch logic, compare the former and latter, it's very complicated
-    for (i in 1:nrow(iterbi.bifucation)) {
+    for (i in 1:nrow(bt2m.bifucation)) {
         # print(i)
-        child1 <- iterbi.bifucation[i,2]
-        child2 <- iterbi.bifucation[i,3]
+        child1 <- bt2m.bifucation[i,2]
+        child2 <- bt2m.bifucation[i,3]
         tmp.level <- strsplit(child1, split = "_")[[1]][1]
         tmp.level.index <- as.numeric(substr(tmp.level, 2, 10))
         if (tmp.level.index==1) next
         child1.index <- as.numeric(strsplit(child1, split = "_")[[1]][2])
         child2.index <- as.numeric(strsplit(child2, split = "_")[[1]][2])
         #
-        tmp.position <- unique(iterbi.cellMeta[,tmp.level])
+        tmp.position <- unique(bt2m.cellMeta[,tmp.level])
         # message(paste(tmp.position, collapse = ", "))
         former.child <- tmp.position[tmp.position %in% c(child1.index, child2.index)][1]
         latter.child <- tmp.position[tmp.position %in% c(child1.index, child2.index)][2]
         former.child.index <- which(tmp.position==former.child)
         latter.child.index <- which(tmp.position==latter.child)
         # distance
-        all.exprMat$level <- iterbi.cellMeta[,tmp.level]
+        all.exprMat$level <- bt2m.cellMeta[,tmp.level]
         module.exprMat <- aggregate(all.exprMat[, 1:(ncol(all.exprMat)-1)], list(all.exprMat$level), mean)
         rownames(module.exprMat) <- module.exprMat$`Group.1`
         module.exprMat$`Group.1` <- NULL
@@ -229,36 +229,36 @@ OrderCluster <- function(seuratObj, iterbi.result) {
             }
         }
         # sort
-        tmp.levels <- iterbi.cellMeta[,tmp.level]
+        tmp.levels <- bt2m.cellMeta[,tmp.level]
         tmp.levels <- factor(tmp.levels, levels = tmp.position)
-        iterbi.cellMeta <- iterbi.cellMeta[order(tmp.levels, decreasing = F),]
+        bt2m.cellMeta <- bt2m.cellMeta[order(tmp.levels, decreasing = F),]
         # break
     }
-    iterbi.result[["cellMeta"]] <- iterbi.cellMeta
-    return(iterbi.result)
+    bt2m.result[["cellMeta"]] <- bt2m.cellMeta
+    return(bt2m.result)
 }
 
-#' rename the clusters inside the iterbi result
+#' rename the clusters inside the bt2m result
 #'
-#' @param iterbi.result A result file from RunIterbi() function
+#' @param bt2m.result A result file from RunIterbi() function
 
 #' @return A renamed list. cellMeta contains the final bifurcation for each level
 #' marker_chain contains all the significant markers for each cluster
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-RenameIterbi <- function(iterbi.result) {
-  # rename three files, iterbi.cellMeta is one type, iterbi.marker.chain and iterbi.bifucation are another type
-  iterbi.cellMeta <- iterbi.result[["cellMeta"]]
-  iterbi.marker.chain <- iterbi.result[["marker_chain"]]
-  iterbi.bifucation <- iterbi.result[["bifucation"]]
+RenameIterbi <- function(bt2m.result) {
+  # rename three files, bt2m.cellMeta is one type, bt2m.marker.chain and bt2m.bifucation are another type
+  bt2m.cellMeta <- bt2m.result[["cellMeta"]]
+  bt2m.marker.chain <- bt2m.result[["marker_chain"]]
+  bt2m.bifucation <- bt2m.result[["bifucation"]]
   #
   # reoder the name of cluster name and marker module name
   all.map.df <- data.frame()
-  for (i in 1:ncol(iterbi.cellMeta)) {
+  for (i in 1:ncol(bt2m.cellMeta)) {
     # find a key error, we start from L1
     # all old cluster name in each level
-    tmp.cluster.name <- unique(iterbi.cellMeta[,i])
+    tmp.cluster.name <- unique(bt2m.cellMeta[,i])
     # add level prefix
     tmp.cluster.name2 <- paste("L",i-1,"_",tmp.cluster.name,sep = "")
     # give new cluster name
@@ -267,7 +267,7 @@ RenameIterbi <- function(iterbi.result) {
                              new_cluster=new.cluster.name, stringsAsFactors = F, level=paste("L",i-1,sep = ""))
     all.map.df <- rbind(all.map.df, tmp.map.df)
     # replace old cluster name by new cluster name
-    iterbi.cellMeta[,i] <- plyr::mapvalues(iterbi.cellMeta[,i],
+    bt2m.cellMeta[,i] <- plyr::mapvalues(bt2m.cellMeta[,i],
                                             from = tmp.map.df$old_cluster,
                                             to=tmp.map.df$new_cluster)
     # break
@@ -276,34 +276,34 @@ RenameIterbi <- function(iterbi.result) {
   #
   all.map.df.NoEnd <- subset(all.map.df, !grepl("end", old_cluster))
   # these two files don't invovle end-node
-  iterbi.marker.chain$cluster <- plyr::mapvalues(iterbi.marker.chain$cluster,
+  bt2m.marker.chain$cluster <- plyr::mapvalues(bt2m.marker.chain$cluster,
                                                       from = all.map.df.NoEnd$old_cluster_prefix,
                                                       to = all.map.df.NoEnd$new_cluster_full)
-  iterbi.marker.chain$parent <- plyr::mapvalues(iterbi.marker.chain$parent,
+  bt2m.marker.chain$parent <- plyr::mapvalues(bt2m.marker.chain$parent,
                                                     from = all.map.df.NoEnd$old_cluster_prefix,
                                                     to = all.map.df.NoEnd$new_cluster_full)
   #
-  iterbi.bifucation$parent <- plyr::mapvalues(iterbi.bifucation$parent,
+  bt2m.bifucation$parent <- plyr::mapvalues(bt2m.bifucation$parent,
                                                from = all.map.df.NoEnd$old_cluster_prefix,
                                                to = all.map.df.NoEnd$new_cluster_full)
-  iterbi.bifucation$child1 <- plyr::mapvalues(iterbi.bifucation$child1,
+  bt2m.bifucation$child1 <- plyr::mapvalues(bt2m.bifucation$child1,
                                                from = all.map.df.NoEnd$old_cluster_prefix,
                                                to = all.map.df.NoEnd$new_cluster_full)
-  iterbi.bifucation$child2 <- plyr::mapvalues(iterbi.bifucation$child2,
+  bt2m.bifucation$child2 <- plyr::mapvalues(bt2m.bifucation$child2,
                                                from = all.map.df.NoEnd$old_cluster_prefix,
                                                to = all.map.df.NoEnd$new_cluster_full)
-  for (i in 1:ncol(iterbi.cellMeta)) {
+  for (i in 1:ncol(bt2m.cellMeta)) {
     # print(i)
-    iterbi.cellMeta[,i] <- as.numeric(iterbi.cellMeta[,i])
+    bt2m.cellMeta[,i] <- as.numeric(bt2m.cellMeta[,i])
     # break
   }
   # remove duplicated levels
-  iterbi.cellMeta <- iterbi.cellMeta[,!duplicated(t(iterbi.cellMeta))]
+  bt2m.cellMeta <- bt2m.cellMeta[,!duplicated(t(bt2m.cellMeta))]
   # output
-  iterbi.result[["cellMeta"]] <- iterbi.cellMeta
-  iterbi.result[["marker_chain"]] <- iterbi.marker.chain
-  iterbi.result[["bifucation"]] <- iterbi.bifucation
-  return(iterbi.result)
+  bt2m.result[["cellMeta"]] <- bt2m.cellMeta
+  bt2m.result[["marker_chain"]] <- bt2m.marker.chain
+  bt2m.result[["bifucation"]] <- bt2m.bifucation
+  return(bt2m.result)
 }
 
 #' transform dataframe to vector
@@ -323,59 +323,59 @@ DataframeToVector <- function(df) {
 #' filter uniquely expressed markers by expression percentage
 #'
 #' @param seuratObj A Seurat object
-#' @param iterbi.cellMeta iterbi.cellMeta dataframe from iterbi
-#' @param iterbi.marker.chain iterbi.marker.chain dataframe contains all the markers
+#' @param bt2m.cellMeta bt2m.cellMeta dataframe from bt2m
+#' @param bt2m.marker.chain bt2m.marker.chain dataframe contains all the markers
 #' @param assay Assay used for prediction
 #' @param slot slot used for prediction
 #'
 #' @return A new dataframe with two additional columns: cluster_pct (expression percentage in the cluster) and bcg_pct (expression percentage in the background cells)
 #' @export
 #'
-AddMarkerExpressionPct <- function(seuratObj, iterbi.cellMeta, iterbi.marker.chain, assay = "RNA", slot = "data") {
+AddMarkerExpressionPct <- function(seuratObj, bt2m.cellMeta, bt2m.marker.chain, assay = "RNA", slot = "data") {
   # # cannot remove any markers, they all meaningful
   # rm duplicate markers from last
-  # iterbi.marker.chain.uniq <- RemoveDuplicatedMarker(iterbi.marker.chain)
-  iterbi.marker.chain$cluster_pct <- 0
-  iterbi.marker.chain$bcg_pct <- 0
+  # bt2m.marker.chain.uniq <- RemoveDuplicatedMarker(bt2m.marker.chain)
+  bt2m.marker.chain$cluster_pct <- 0
+  bt2m.marker.chain$bcg_pct <- 0
   # get data
   reference.data <- GetAssayData(object = seuratObj, assay = assay, slot = slot)
   # tmp.exprMat <- as.matrix(seuratObj@assays$RNA@data)
   # too slow!!!
-  # for (i in 1:nrow(iterbi.marker.chain)) {
+  # for (i in 1:nrow(bt2m.marker.chain)) {
   #   # print(i)
-  #   tmp.gene <- iterbi.marker.chain$gene[i]
-  #   tmp.cluster <- iterbi.marker.chain$cluster[i]
+  #   tmp.gene <- bt2m.marker.chain$gene[i]
+  #   tmp.cluster <- bt2m.marker.chain$cluster[i]
   #   tmp.level <- strsplit(tmp.cluster, split = "_")[[1]][1]
   #   tmp.cluster.index <- as.numeric(strsplit(tmp.cluster, split = "_")[[1]][2])
-  #   tmp.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,] )
-  #   bcg.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]!=tmp.cluster.index,] )
+  #   tmp.cells <- rownames(bt2m.cellMeta[bt2m.cellMeta[,tmp.level]==tmp.cluster.index,] )
+  #   bcg.cells <- rownames(bt2m.cellMeta[bt2m.cellMeta[,tmp.level]!=tmp.cluster.index,] )
   #   tmp.gene.expression <- reference.data[tmp.gene,tmp.cells]
   #   bcg.gene.expression <- reference.data[tmp.gene,bcg.cells]
   #   tmp.cluster.pct <- sum(tmp.gene.expression>0.1) / length(tmp.gene.expression)
   #   tmp.background.pct <- sum(bcg.gene.expression>0.1) / length(bcg.gene.expression)
-  #   iterbi.marker.chain[i,"cluster_pct"] <- tmp.cluster.pct
-  #   iterbi.marker.chain[i,"bcg_pct"] <- tmp.background.pct
+  #   bt2m.marker.chain[i,"cluster_pct"] <- tmp.cluster.pct
+  #   bt2m.marker.chain[i,"bcg_pct"] <- tmp.background.pct
   #   # break
   # }
   # to reduce the computation cost, must do it cluster by cluster
-  for (tmp.cluster in unique(iterbi.marker.chain$cluster)) {
+  for (tmp.cluster in unique(bt2m.marker.chain$cluster)) {
       # print(i)
-      tmp.df <- subset(iterbi.marker.chain, cluster==tmp.cluster)
+      tmp.df <- subset(bt2m.marker.chain, cluster==tmp.cluster)
       tmp.level <- strsplit(tmp.cluster, split = "_")[[1]][1]
       tmp.cluster.index <- as.numeric(strsplit(tmp.cluster, split = "_")[[1]][2])
-      tmp.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,] )
-      bcg.cells <- rownames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]!=tmp.cluster.index,] )
+      tmp.cells <- rownames(bt2m.cellMeta[bt2m.cellMeta[,tmp.level]==tmp.cluster.index,] )
+      bcg.cells <- rownames(bt2m.cellMeta[bt2m.cellMeta[,tmp.level]!=tmp.cluster.index,] )
       tmp.expression <- reference.data[,tmp.cells]
       bcg.expression <- reference.data[,bcg.cells]
       tmp.cluster.pct <- rowSums(as.matrix(tmp.expression>0)) / ncol(tmp.expression)
       tmp.background.pct <- rowSums(as.matrix(bcg.expression>0)) / ncol(bcg.expression)
       # write to df
-      iterbi.marker.chain[iterbi.marker.chain$gene %in% tmp.df$gene & iterbi.marker.chain$cluster==tmp.cluster,]$cluster_pct <- tmp.cluster.pct[tmp.df$gene]
-      iterbi.marker.chain[iterbi.marker.chain$gene %in% tmp.df$gene & iterbi.marker.chain$cluster==tmp.cluster,]$bcg_pct <- tmp.background.pct[tmp.df$gene]
+      bt2m.marker.chain[bt2m.marker.chain$gene %in% tmp.df$gene & bt2m.marker.chain$cluster==tmp.cluster,]$cluster_pct <- tmp.cluster.pct[tmp.df$gene]
+      bt2m.marker.chain[bt2m.marker.chain$gene %in% tmp.df$gene & bt2m.marker.chain$cluster==tmp.cluster,]$bcg_pct <- tmp.background.pct[tmp.df$gene]
       # break
   }
   #
-  return(iterbi.marker.chain)
+  return(bt2m.marker.chain)
 }
 
 #' remove duplicated GO terms based on overlaps of genes
@@ -402,9 +402,9 @@ RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
   return(tmp.GO.df[remain.GOterms,])
 }
 
-#' Perform GO annotation of iterbi.marker.chain dataframe
+#' Perform GO annotation of bt2m.marker.chain dataframe
 #'
-#' @param iterbi.marker.chain terbi.marker.chain dataframe contains all the markers
+#' @param bt2m.marker.chain terbi.marker.chain dataframe contains all the markers
 #' @param organism "hs" for Homo sapiens, or "mm" for Mus musculus
 #' @param pvalueCutoff cut off P-value for GO annotations
 #' @param min_count Minimal count of genes for GO annotations
@@ -412,28 +412,28 @@ RemoveDuplicatedGO <- function(tmp.GO.df, max.overlap=0.6) {
 #' @return GO annotation dataframe labeled with cluster
 #' @export
 #'
-IterbiEnrichGO <- function(iterbi.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 3) {
+IterbiEnrichGO <- function(bt2m.marker.chain, organism="hs", pvalueCutoff = 0.05, min_count = 3) {
   marker.list <- list()
-  for (i in unique(iterbi.marker.chain$cluster)) {
+  for (i in unique(bt2m.marker.chain$cluster)) {
     # print(i)
-    tmp.marker.df <- subset(iterbi.marker.chain, cluster==i)
+    tmp.marker.df <- subset(bt2m.marker.chain, cluster==i)
     marker.list[[i]] <- tmp.marker.df$gene
   }
   #
-  iterbi.GO.anno <- clusterProfilerORA(geneList = marker.list, organism=organism)
+  bt2m.GO.anno <- clusterProfilerORA(geneList = marker.list, organism=organism)
   #
-  iterbi.GO.anno.filtered <- data.frame()
-  for (i in names(iterbi.GO.anno$go_list)) {
+  bt2m.GO.anno.filtered <- data.frame()
+  for (i in names(bt2m.GO.anno$go_list)) {
     # print(i)
-    tmp.GO.df <- iterbi.GO.anno$go_list[[i]]@result
+    tmp.GO.df <- bt2m.GO.anno$go_list[[i]]@result
     tmp.GO.df <- subset(tmp.GO.df, pvalue<pvalueCutoff & p.adjust<pvalueCutoff & qvalue<pvalueCutoff & Count>min_count)
     if (nrow(tmp.GO.df)<1) next
     tmp.GO.df <- RemoveDuplicatedGO(tmp.GO.df)
     tmp.GO.df$cluster <- i
-    iterbi.GO.anno.filtered <- rbind(iterbi.GO.anno.filtered, tmp.GO.df)
+    bt2m.GO.anno.filtered <- rbind(bt2m.GO.anno.filtered, tmp.GO.df)
     # break
   }
-  return(iterbi.GO.anno.filtered)
+  return(bt2m.GO.anno.filtered)
 }
 
 #' GO KEGG ORA analysis by clusterProfiler
@@ -512,7 +512,7 @@ clusterProfilerORA <- function(geneList=markerList, organism="hs") {
 #' @export
 #'
 subsetSeuratObj <- function(seuratObj, tmp.cells) {
-  # tmp.cells <- rownames(tmp.iterbi.cellMeta.3)
+  # tmp.cells <- rownames(tmp.bt2m.cellMeta.3)
   tmp <- rep(F, ncol(seuratObj))
   names(tmp) <- colnames(seuratObj)
   tmp[tmp.cells] <- T
@@ -522,10 +522,10 @@ subsetSeuratObj <- function(seuratObj, tmp.cells) {
   return(tmp.seuratObj)
 }
 
-#' Find initial bifurcation event of any two clusters in iterbi.cellMeta
+#' Find initial bifurcation event of any two clusters in bt2m.cellMeta
 #'
 #' @param seuratObj A Seurat object
-#' @param iterbi.cellMeta iterbi.cellMeta from iterbi
+#' @param bt2m.cellMeta bt2m.cellMeta from bt2m
 #' @param cluster_1 cluster 1
 #' @param cluster_2 cluster 2
 #' @param balance_cells output balanced cell number (T or F)
@@ -534,7 +534,7 @@ subsetSeuratObj <- function(seuratObj, tmp.cells) {
 #' diff_marker_1 is the marker of cluster 1, diff_marker_2 is the marker of cluster 2
 #' @export
 #'
-GetInitialBifurcation <- function(seuratObj, iterbi.cellMeta, cluster_1, cluster_2, balance_cells=T) {
+GetInitialBifurcation <- function(seuratObj, bt2m.cellMeta, cluster_1, cluster_2, balance_cells=T) {
   # input any two cluster, trace back to the initial bifurcation event
   level_1 <- strsplit(cluster_1, split = "_")[[1]][1]
   cluster_1.index <- as.numeric(strsplit(cluster_1, split = "_")[[1]][2])
@@ -543,39 +543,39 @@ GetInitialBifurcation <- function(seuratObj, iterbi.cellMeta, cluster_1, cluster
   level_2 <- strsplit(cluster_2, split = "_")[[1]][1]
   cluster_2.index <- as.numeric(strsplit(cluster_2, split = "_")[[1]][2])
   level_2.index <- as.numeric(substr(level_2, 2, 10))
-  # seperate iterbi.cellMeta file
-  tmp.iterbi.cellMeta.1 <- iterbi.cellMeta[iterbi.cellMeta[,level_1]==cluster_1.index,]
-  tmp.iterbi.cellMeta.2 <- iterbi.cellMeta[iterbi.cellMeta[,level_2]==cluster_2.index,]
+  # seperate bt2m.cellMeta file
+  tmp.bt2m.cellMeta.1 <- bt2m.cellMeta[bt2m.cellMeta[,level_1]==cluster_1.index,]
+  tmp.bt2m.cellMeta.2 <- bt2m.cellMeta[bt2m.cellMeta[,level_2]==cluster_2.index,]
   #
   # if they are inherited relationship
-  if (!(row.names(tmp.iterbi.cellMeta.1) %in% row.names(tmp.iterbi.cellMeta.2))==0 || !(row.names(tmp.iterbi.cellMeta.2) %in% row.names(tmp.iterbi.cellMeta.1))==0) {
+  if (!(row.names(tmp.bt2m.cellMeta.1) %in% row.names(tmp.bt2m.cellMeta.2))==0 || !(row.names(tmp.bt2m.cellMeta.2) %in% row.names(tmp.bt2m.cellMeta.1))==0) {
     stop("Input clusters are inherited. Please select two unrelated clusters!")
   } else {
     # 倒序搜索共同祖先
-    #tmp.iterbi.cellMeta.3 <- iterbi.cellMeta[iterbi.cellMeta[,level_1]==cluster_1.index | iterbi.cellMeta[,level_2]==cluster_2.index,]
-    tmp.iterbi.cellMeta.3 <- rbind(tmp.iterbi.cellMeta.1, tmp.iterbi.cellMeta.2)
+    #tmp.bt2m.cellMeta.3 <- bt2m.cellMeta[bt2m.cellMeta[,level_1]==cluster_1.index | bt2m.cellMeta[,level_2]==cluster_2.index,]
+    tmp.bt2m.cellMeta.3 <- rbind(tmp.bt2m.cellMeta.1, tmp.bt2m.cellMeta.2)
     for (i in min(level_1.index, level_2.index):1) {
       tmp.level <- paste("L", i-1, sep = "")
       # print(tmp.level)
-      if (length(unique(tmp.iterbi.cellMeta.3[,tmp.level]))==1) break
+      if (length(unique(tmp.bt2m.cellMeta.3[,tmp.level]))==1) break
     }
     None.bifucation.level.index <- i
     None.bifucation.level <- paste("L", None.bifucation.level.index-1, sep = "")
     alreay.bifucation.level <- paste("L", None.bifucation.level.index, sep = "")
     # get the first two ancestor
-    ancestor.cluster_1 <- tmp.iterbi.cellMeta.3[tmp.iterbi.cellMeta.3[,level_1]==cluster_1.index,][1,alreay.bifucation.level]
-    ancestor.cluster_2 <- tmp.iterbi.cellMeta.3[tmp.iterbi.cellMeta.3[,level_2]==cluster_2.index,][1,alreay.bifucation.level]
+    ancestor.cluster_1 <- tmp.bt2m.cellMeta.3[tmp.bt2m.cellMeta.3[,level_1]==cluster_1.index,][1,alreay.bifucation.level]
+    ancestor.cluster_2 <- tmp.bt2m.cellMeta.3[tmp.bt2m.cellMeta.3[,level_2]==cluster_2.index,][1,alreay.bifucation.level]
     #
-    Non.split.ancestor.cluster <- tmp.iterbi.cellMeta.3[tmp.iterbi.cellMeta.3[,level_1]==cluster_1.index,][1,None.bifucation.level]
+    Non.split.ancestor.cluster <- tmp.bt2m.cellMeta.3[tmp.bt2m.cellMeta.3[,level_1]==cluster_1.index,][1,None.bifucation.level]
     # get the first bifurcation markers
-    diff_marker_1 <- subset(iterbi.marker.chain, cluster==paste(alreay.bifucation.level, ancestor.cluster_1, sep = "_"))
-    diff_marker_2 <- subset(iterbi.marker.chain, cluster==paste(alreay.bifucation.level, ancestor.cluster_2, sep = "_"))
+    diff_marker_1 <- subset(bt2m.marker.chain, cluster==paste(alreay.bifucation.level, ancestor.cluster_1, sep = "_"))
+    diff_marker_2 <- subset(bt2m.marker.chain, cluster==paste(alreay.bifucation.level, ancestor.cluster_2, sep = "_"))
     # get subset seuratObj
-    tmp.seuratObj <- subsetSeuratObj(seuratObj, rownames(tmp.iterbi.cellMeta.3))
-    tmp.iterbi.cellMeta.3$merged_cluster <- paste(level_2, tmp.iterbi.cellMeta.3[,level_2], sep = "_")
-    tmp.iterbi.cellMeta.3[tmp.iterbi.cellMeta.3[,level_1]==cluster_1.index, "merged_cluster"] <- paste(level_1, tmp.iterbi.cellMeta.3[tmp.iterbi.cellMeta.3[,level_1]==cluster_1.index, level_1], sep = "_")
+    tmp.seuratObj <- subsetSeuratObj(seuratObj, rownames(tmp.bt2m.cellMeta.3))
+    tmp.bt2m.cellMeta.3$merged_cluster <- paste(level_2, tmp.bt2m.cellMeta.3[,level_2], sep = "_")
+    tmp.bt2m.cellMeta.3[tmp.bt2m.cellMeta.3[,level_1]==cluster_1.index, "merged_cluster"] <- paste(level_1, tmp.bt2m.cellMeta.3[tmp.bt2m.cellMeta.3[,level_1]==cluster_1.index, level_1], sep = "_")
     # set merged cluster name
-    tmp.ident <- tmp.iterbi.cellMeta.3[colnames(tmp.seuratObj),]$merged_cluster
+    tmp.ident <- tmp.bt2m.cellMeta.3[colnames(tmp.seuratObj),]$merged_cluster
     names(tmp.ident) <- colnames(tmp.seuratObj)
     tmp.ident <- factor(tmp.ident, levels = c(cluster_1, cluster_2))
     tmp.seuratObj@active.ident <- tmp.ident
@@ -595,73 +595,73 @@ GetInitialBifurcation <- function(seuratObj, iterbi.cellMeta, cluster_1, cluster
 
 #' Find the cluster chain of any given cluster
 #'
-#' @param iterbi.cellMeta iterbi.cellMeta from iterbi
-#' @param iterbi.bifucation iterbi.bifucation from iterbi
+#' @param bt2m.cellMeta bt2m.cellMeta from bt2m
+#' @param bt2m.bifucation bt2m.bifucation from bt2m
 #' @param target.cluster target cluster
 #'
 #' @return A vector, names are cluster name, element shows the states of clusters
 #' @export
 #'
-GetClusterChain <- function(iterbi.cellMeta, iterbi.bifucation, target.cluster) {
+GetClusterChain <- function(bt2m.cellMeta, bt2m.bifucation, target.cluster) {
     tmp.level <- strsplit(target.cluster, split = "_")[[1]][1]
     tmp.level.index <- as.numeric(substr(tmp.level, 2, 10))
     tmp.cluster.index <- as.numeric(strsplit(target.cluster, split = "_")[[1]][2])
-    if (!(tmp.level %in% colnames(iterbi.cellMeta)) || !(tmp.cluster.index %in% iterbi.cellMeta[,tmp.level])) {
+    if (!(tmp.level %in% colnames(bt2m.cellMeta)) || !(tmp.cluster.index %in% bt2m.cellMeta[,tmp.level])) {
         message("Please input correct target.cluster!!!")
     } else {
-        cluster.chain <- paste(colnames(iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,]), 
-                               iterbi.cellMeta[iterbi.cellMeta[,tmp.level]==tmp.cluster.index,][1,], sep = "_")
+        cluster.chain <- paste(colnames(bt2m.cellMeta[bt2m.cellMeta[,tmp.level]==tmp.cluster.index,]), 
+                               bt2m.cellMeta[bt2m.cellMeta[,tmp.level]==tmp.cluster.index,][1,], sep = "_")
     }
     # node attribute
-    node_attr <- c("End_node","Parent_node")[as.integer(cluster.chain %in% unlist(iterbi.bifucation))+1]
+    node_attr <- c("End_node","Parent_node")[as.integer(cluster.chain %in% unlist(bt2m.bifucation))+1]
     names(node_attr) <- cluster.chain
     return(node_attr)
 }
 
-#' Write iterbi result to Seurat object
+#' Write bt2m result to Seurat object
 #'
 #' @param seuratObj A Seurat object
-#' @param iterbi.result iterbi.result
+#' @param bt2m.result bt2m.result
 #'
-#' @return A Seurat object contains iterbi.result. iterbi will be stored in assay data region of Seurat object ("seuratObj@assays$iterbi")
+#' @return A Seurat object contains bt2m.result. bt2m will be stored in assay data region of Seurat object ("seuratObj@assays$bt2m")
 #' @export
 #'
-WriteIterbiIntoSeurat <- function(seuratObj, iterbi.result) {
+WriteIterbiIntoSeurat <- function(seuratObj, bt2m.result) {
   # get results
-  iterbi.cellMeta <- iterbi.result[["cellMeta"]]
-  iterbi.marker.chain <- iterbi.result[["marker_chain"]]
-  iterbi.bifucation <- iterbi.result[["bifucation"]]
+  bt2m.cellMeta <- bt2m.result[["cellMeta"]]
+  bt2m.marker.chain <- bt2m.result[["marker_chain"]]
+  bt2m.bifucation <- bt2m.result[["bifucation"]]
   # input L-data to seurat
-  for (i in colnames(iterbi.cellMeta)) {
+  for (i in colnames(bt2m.cellMeta)) {
     # print(i)
-    tmp.ident <- iterbi.cellMeta[,i]
-    names(tmp.ident) <- rownames(iterbi.cellMeta)
+    tmp.ident <- bt2m.cellMeta[,i]
+    names(tmp.ident) <- rownames(bt2m.cellMeta)
     tmp.ident <- factor(tmp.ident, levels = sort(unique(tmp.ident)))
     seuratObj[[i]] <- tmp.ident
   }
-  #iterbi.cellMeta <- iterbi.result[["cellMeta"]]
-  #iterbi.marker.chain <- iterbi.result[["marker_chain"]]
-  #iterbi.bifucation <- iterbi.result[["bifucation"]]
-  seuratObj@assays$iterbi <- iterbi.result
+  #bt2m.cellMeta <- bt2m.result[["cellMeta"]]
+  #bt2m.marker.chain <- bt2m.result[["marker_chain"]]
+  #bt2m.bifucation <- bt2m.result[["bifucation"]]
+  seuratObj@assays$bt2m <- bt2m.result
   return(seuratObj)
 }
 
 #' Remove duplicated markers (just for plotting)
 #'
-#' @param iterbi.marker.chain iterbi.marker.chain from iterbi
+#' @param bt2m.marker.chain bt2m.marker.chain from bt2m
 #' @param method select a method to sort markers
 #'
-#' @return iterbi.marker.chain without duplicated genes
+#' @return bt2m.marker.chain without duplicated genes
 #' @export
 #'
-RemoveDuplicatedMarker <- function(iterbi.marker.chain, method = "correlation") {
+RemoveDuplicatedMarker <- function(bt2m.marker.chain, method = "correlation") {
   if (method == "level") {
-    iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = T),]
+    bt2m.marker.chain.uniq <- bt2m.marker.chain[!duplicated(bt2m.marker.chain$gene, fromLast = T),]
     } else if (method == "correlation") {
-      iterbi.marker.chain <- iterbi.marker.chain[order(iterbi.marker.chain$correlation, decreasing = T),]
-      iterbi.marker.chain.uniq <- iterbi.marker.chain[!duplicated(iterbi.marker.chain$gene, fromLast = F),]
+      bt2m.marker.chain <- bt2m.marker.chain[order(bt2m.marker.chain$correlation, decreasing = T),]
+      bt2m.marker.chain.uniq <- bt2m.marker.chain[!duplicated(bt2m.marker.chain$gene, fromLast = F),]
     } else {
       message("Please input correct method!")
     }
-  return(iterbi.marker.chain.uniq)
+  return(bt2m.marker.chain.uniq)
 }

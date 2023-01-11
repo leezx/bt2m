@@ -4,12 +4,12 @@
 \alias{DrawGOchain}
 \title{Get GO chain corresponding to a cluster chain}
 \usage{
-DrawGOchain(iterbi.GO.anno, cluster.chain, top_n = 3)
+DrawGOchain(bt2m.GO.anno, cluster.chain, top_n = 3)
 }
 \arguments{
-\item{iterbi.GO.anno}{A GO annotation dataframe from clusterProfiler}
+\item{bt2m.GO.anno}{A GO annotation dataframe from clusterProfiler}
 
-\item{cluster.chain}{cluster.chain from iterbi}
+\item{cluster.chain}{cluster.chain from bt2m}
 
 \item{top_n}{top n GO terms for barplot (sort by P-value)}
 }

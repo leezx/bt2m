@@ -1,4 +1,4 @@
-# source("https://github.com/leezx/iterbi/raw/main/notebooks/unpackaged-code/pathway_enrichment.R")
+# source("https://github.com/leezx/bt2m/raw/main/notebooks/unpackaged-code/pathway_enrichment.R")
 
 #' GO KEGG ORA analysis
 #' @param geneList a gene list

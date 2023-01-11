@@ -6,7 +6,7 @@
 \usage{
 DrawMarkerChainDotplot(
   seuratObj,
-  iterbi.marker.chain,
+  bt2m.marker.chain,
   rmDup = T,
   top_n = 3,
   rel_heights = c(0.5, 9, 1.5),
@@ -16,7 +16,7 @@ DrawMarkerChainDotplot(
 \arguments{
 \item{seuratObj}{A Seurat object}
 
-\item{iterbi.marker.chain}{iterbi.marker.chain from iterbi}
+\item{bt2m.marker.chain}{bt2m.marker.chain from bt2m}
 
 \item{rmDup}{remove duplicated genes or not}
 

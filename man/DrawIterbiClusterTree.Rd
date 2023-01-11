@@ -6,7 +6,7 @@
 \usage{
 DrawIterbiClusterTree(
   seuratObj,
-  iterbi.cellMeta,
+  bt2m.cellMeta,
   node_text_size = 7,
   node_size = 8
 )
@@ -14,7 +14,7 @@ DrawIterbiClusterTree(
 \arguments{
 \item{seuratObj}{A Seurat object}
 
-\item{iterbi.cellMeta}{iterbi.cellMeta from iterbi}
+\item{bt2m.cellMeta}{bt2m.cellMeta from bt2m}
 
 \item{node_text_size}{see node_text_size in clustree function}
 

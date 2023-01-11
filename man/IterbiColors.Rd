@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualization.R
 \name{IterbiColors}
 \alias{IterbiColors}
-\title{Colors for iterbi}
+\title{Colors for bt2m}
 \usage{
 IterbiColors()
 }
@@ -10,5 +10,5 @@ IterbiColors()
 A color vector
 }
 \description{
-Colors for iterbi
+Colors for bt2m
 }

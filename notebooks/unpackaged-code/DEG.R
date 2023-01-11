@@ -1,4 +1,4 @@
-# source("https://github.com/leezx/iterbi/raw/main/notebooks/unpackaged-code/DEG.R")
+# source("https://github.com/leezx/bt2m/raw/main/notebooks/unpackaged-code/DEG.R")
 
 #' A general function to identify DEGs between case and control
 cluster_DEG_twoGroups <- function(seuratObj, cluster, group_by, ident.ref, ident.query, pooled = T, 

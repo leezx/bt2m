@@ -6,7 +6,7 @@
 \usage{
 PrepareExpressionMatrix(
   seuratObj,
-  iterbi.marker.chain,
+  bt2m.marker.chain,
   assay = "RNA",
   slot = "scale.data",
   known_markers = c()
@@ -15,7 +15,7 @@ PrepareExpressionMatrix(
 \arguments{
 \item{seuratObj}{A Seurat object}
 
-\item{iterbi.marker.chain}{iterbi.marker.chain from iterbi}
+\item{bt2m.marker.chain}{bt2m.marker.chain from bt2m}
 
 \item{assay}{Assay used for prediction}
 

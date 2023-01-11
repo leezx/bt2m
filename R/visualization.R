@@ -4,7 +4,7 @@
 #' Prepare expression matrix for heatmap visualization, estimate the overall expression of marker modules
 #'
 #' @param seuratObj A Seurat object
-#' @param iterbi.marker.chain iterbi.marker.chain from iterbi
+#' @param bt2m.marker.chain bt2m.marker.chain from bt2m
 #' @param assay Assay used for prediction
 #' @param slot slot used for prediction
 #' @param known_markers the genes to include in the heatmap (like known markers)
@@ -12,20 +12,20 @@
 #' @return A expression matrix contain the average expression of marker modules and known markers
 #' @export
 #'
-PrepareExpressionMatrix <- function(seuratObj, iterbi.marker.chain, assay="RNA", slot = "scale.data",
+PrepareExpressionMatrix <- function(seuratObj, bt2m.marker.chain, assay="RNA", slot = "scale.data",
                                               known_markers = c()) {
   # get data
   reference.data <- GetAssayData(object = seuratObj, assay = assay, slot = slot)
   reference.data <- as.matrix(reference.data) # RNA data is not matrix
   if (is.null(reference.data)) stop("Data not exist. Please input right assay and slot!!!")
   all.exprMat <- data.frame()
-  for (i in unique(iterbi.marker.chain$cluster)) {
-    tmp.module <- subset(iterbi.marker.chain, cluster==i)$gene
+  for (i in unique(bt2m.marker.chain$cluster)) {
+    tmp.module <- subset(bt2m.marker.chain, cluster==i)$gene
     tmp.exprMat <- colMeans(reference.data[tmp.module,])
     all.exprMat <- rbind(all.exprMat, tmp.exprMat)
     # break
   }
-  rownames(all.exprMat) <- unique(iterbi.marker.chain$cluster)
+  rownames(all.exprMat) <- unique(bt2m.marker.chain$cluster)
   colnames(all.exprMat) <- colnames(reference.data)
   # gene for validation
   if (length(known_markers)>1) {
@@ -34,13 +34,13 @@ PrepareExpressionMatrix <- function(seuratObj, iterbi.marker.chain, assay="RNA",
   return(all.exprMat)
 }
 
-#' Colors for iterbi
+#' Colors for bt2m
 #'
 #' @return A color vector
 #' @export
 #'
 IterbiColors <- function() {
-  iterbi.colors <- unique(c(brewer.pal(n = 9, name = "Set1"),
+  bt2m.colors <- unique(c(brewer.pal(n = 9, name = "Set1"),
                             brewer.pal(n = 8, name = "Dark2"),
                             brewer.pal(n = 12, name = "Paired"),
                             brewer.pal(n = 8, name = "Set2"),
@@ -49,36 +49,36 @@ IterbiColors <- function() {
                             brewer.pal(n = 9, name = "Pastel1"),
                             brewer.pal(n = 8, name = "Pastel2")
   ))
-  return(iterbi.colors)
+  return(bt2m.colors)
 }
 
 #' Draw heatmap by ComplexHeatmap
 #'
 #' @param seuratObj A Seurat object
-#' @param iterbi.cellMeta iterbi.cellMeta from iterbi
-#' @param iterbi.marker.chain iterbi.marker.chain from iterbi
+#' @param bt2m.cellMeta bt2m.cellMeta from bt2m
+#' @param bt2m.marker.chain bt2m.marker.chain from bt2m
 #' @param compare_anno select a annotation in seurat object for comparision (e.g. previous annotation)
 #' @param known_markers the genes to include in the heatmap (like known markers)
 #'
 #' @return ComplexHeatmap object
 #' @export
 #'
-DrawMarkerChainHeatmap <- function(seuratObj, iterbi.cellMeta, iterbi.marker.chain, compare_anno="",
+DrawMarkerChainHeatmap <- function(seuratObj, bt2m.cellMeta, bt2m.marker.chain, compare_anno="",
                                         known_markers=c()) {
   # get data
-  all.exprMat <- PrepareExpressionMatrix(seuratObj, iterbi.marker.chain, known_markers=known_markers)
+  all.exprMat <- PrepareExpressionMatrix(seuratObj, bt2m.marker.chain, known_markers=known_markers)
   # heatmap color set
   col_fun = colorRamp2(c(-2, 0, 3), c("green", "white", "red"))
   # col_fun = colorRamp2(c(-2, 0, 3), c("#FF00FF","#000000","#FFFF00")) # seurat color
   col_fun(seq(-3, 3))
   # get colors
-  iterbi.colors <- IterbiColors()
+  bt2m.colors <- IterbiColors()
   # prepare color
   color.list <- list()
-  for (i in paste("L",0:(ncol(iterbi.cellMeta)-1),sep = "")) {
+  for (i in paste("L",0:(ncol(bt2m.cellMeta)-1),sep = "")) {
     # print(i)
-    tmp.names <- unique(iterbi.cellMeta[[i]])
-    tmp.colors <- iterbi.colors[1:length(tmp.names)]
+    tmp.names <- unique(bt2m.cellMeta[[i]])
+    tmp.colors <- bt2m.colors[1:length(tmp.names)]
     names(tmp.colors) <- tmp.names
     color.list[[i]] <- tmp.colors
     # break
@@ -89,22 +89,22 @@ DrawMarkerChainHeatmap <- function(seuratObj, iterbi.cellMeta, iterbi.marker.cha
     tmp.anno.vector <- tmp.anno[,1]
     names(tmp.anno.vector) <- rownames(tmp.anno)
     # add color
-    color.list$Annotation <- iterbi.colors[1:length(unique(tmp.anno.vector))]
+    color.list$Annotation <- bt2m.colors[1:length(unique(tmp.anno.vector))]
     names(color.list$Annotation) <- as.character(unique(tmp.anno.vector))
   }
   # sort clusters, to avoid 10 follow 1 cluster
-  for (i in colnames(iterbi.cellMeta)) {
-    iterbi.cellMeta[,i] <- factor(iterbi.cellMeta[,i], levels = unique(iterbi.cellMeta[,i]))
+  for (i in colnames(bt2m.cellMeta)) {
+    bt2m.cellMeta[,i] <- factor(bt2m.cellMeta[,i], levels = unique(bt2m.cellMeta[,i]))
   }
   # top color bar
   ha <- HeatmapAnnotation(
-    df = iterbi.cellMeta,
-    Annotation = tmp.anno.vector[rownames(iterbi.cellMeta)],
+    df = bt2m.cellMeta,
+    Annotation = tmp.anno.vector[rownames(bt2m.cellMeta)],
     col = color.list
   )
   #
   # options(repr.plot.width=10, repr.plot.height=7)
-  ht <- Heatmap(all.exprMat[,rownames(iterbi.cellMeta)], col = col_fun, name = "Expression",
+  ht <- Heatmap(all.exprMat[,rownames(bt2m.cellMeta)], col = col_fun, name = "Expression",
                 #row_split = sc3_marker$cluster, column_split = anno$col$Cluster, layer_fun = layer_fun,
                 use_raster = F,
                 top_annotation = ha, # left_annotation = la,
@@ -115,15 +115,15 @@ DrawMarkerChainHeatmap <- function(seuratObj, iterbi.cellMeta, iterbi.marker.cha
 #' Draw cluster tree/chain by clustree
 #'
 #' @param seuratObj A Seurat object
-#' @param iterbi.cellMeta iterbi.cellMeta from iterbi
+#' @param bt2m.cellMeta bt2m.cellMeta from bt2m
 #' @param node_text_size see node_text_size in clustree function
 #' @param node_size see node_size in clustree function
 #'
 #' @return clustree object
 #' @export
 #'
-DrawIterbiClusterTree <- function(seuratObj, iterbi.cellMeta, node_text_size=7, node_size=8) {
-  seuratObj <- WriteIterbiIntoSeurat(seuratObj, iterbi.cellMeta)
+DrawIterbiClusterTree <- function(seuratObj, bt2m.cellMeta, node_text_size=7, node_size=8) {
+  seuratObj <- WriteIterbiIntoSeurat(seuratObj, bt2m.cellMeta)
   #
   # options(repr.plot.width=10, repr.plot.height=10)
   # tree <- clustree(seuratObj, prefix = "L", node_text_size = 7)
@@ -139,7 +139,7 @@ DrawIterbiClusterTree <- function(seuratObj, iterbi.cellMeta, node_text_size=7, 
 #' Draw cluster tree/chain by clustree
 #'
 #' @param seuratObj A Seurat object
-#' @param iterbi.marker.chain iterbi.marker.chain from iterbi
+#' @param bt2m.marker.chain bt2m.marker.chain from bt2m
 #' @param rmDup remove duplicated genes or not
 #' @param top_n top n genes for dotplot (sort by P-value)
 #' @param rel_heights relative heights for plot_grid(), the first and last control the height of top and bottom margin, the middle one controls the height of tree
@@ -148,18 +148,18 @@ DrawIterbiClusterTree <- function(seuratObj, iterbi.cellMeta, node_text_size=7, 
 #' @return A plot_grid integrated tree and dotplot
 #' @export
 #'
-DrawMarkerChainDotplot <- function(seuratObj, iterbi.marker.chain, rmDup=T, top_n=3,
+DrawMarkerChainDotplot <- function(seuratObj, bt2m.marker.chain, rmDup=T, top_n=3,
                                       rel_heights=c(0.5, 9, 1.5), rel_widths = c(1, 4)) {
-  if (rmDup) iterbi.marker.chain.rmDup <- RemoveDuplicatedMarker(iterbi.marker.chain)
+  if (rmDup) bt2m.marker.chain.rmDup <- RemoveDuplicatedMarker(bt2m.marker.chain)
   # check level, set to the last
-  check_level <- colnames(iterbi.cellMeta)[ncol(iterbi.cellMeta)]
+  check_level <- colnames(bt2m.cellMeta)[ncol(bt2m.cellMeta)]
   # set active.ident
   seuratObj@active.ident <- DataframeToVector(seuratObj[[check_level]])
   #
-  top <- subset(iterbi.marker.chain.rmDup) %>%
+  top <- subset(bt2m.marker.chain.rmDup) %>%
     group_by(cluster) %>%
     dplyr::top_n(top_n, abs(correlation))
-  p1 <- DrawIterbiClusterTree(seuratObj, iterbi.cellMeta)
+  p1 <- DrawIterbiClusterTree(seuratObj, bt2m.cellMeta)
   p2 <- DotPlot(seuratObj, features = rev(top$gene), dot.scale = 7) + RotatedAxis() + ylab(NULL) + xlab(NULL)
   left.anno <- cowplot::plot_grid(NULL,p1,NULL,ncol = 1, rel_heights = rel_heights)
   # options(repr.plot.width=15, repr.plot.height=7)
@@ -170,7 +170,7 @@ DrawMarkerChainDotplot <- function(seuratObj, iterbi.marker.chain, rmDup=T, top_
 #' Draw barplot for GO annotation
 #'
 #' @param barplot_df A GO annotation dataframe from clusterProfiler
-#' @param cluster.chain cluster.chain from iterbi
+#' @param cluster.chain cluster.chain from bt2m
 #'
 #' @return A ggplot barplot
 #' @export
@@ -216,16 +216,16 @@ DrawBarplotGO <- function(barplot_df, cluster.chain) {
 
 #' Get GO chain corresponding to a cluster chain
 #'
-#' @param iterbi.GO.anno A GO annotation dataframe from clusterProfiler
-#' @param cluster.chain cluster.chain from iterbi
+#' @param bt2m.GO.anno A GO annotation dataframe from clusterProfiler
+#' @param cluster.chain cluster.chain from bt2m
 #' @param top_n top n GO terms for barplot (sort by P-value)
 #'
 #' @return A ggplot barplot showed GO chain
 #' @export
 #'
-DrawGOchain <- function(iterbi.GO.anno, cluster.chain, top_n=3) {
-  iterbi.GO.anno <- iterbi.GO.anno[!duplicated(iterbi.GO.anno$ID, fromLast = T),]
-  GO.chain <- subset(iterbi.GO.anno, cluster %in% names(cluster.chain))
+DrawGOchain <- function(bt2m.GO.anno, cluster.chain, top_n=3) {
+  bt2m.GO.anno <- bt2m.GO.anno[!duplicated(bt2m.GO.anno$ID, fromLast = T),]
+  GO.chain <- subset(bt2m.GO.anno, cluster %in% names(cluster.chain))
   top <- subset(GO.chain) %>%
     group_by(cluster) %>%
     top_n(top_n, -qvalue)
