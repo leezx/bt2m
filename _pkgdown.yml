@@ -1,4 +1,40 @@
-url: ~
+title: BT2M
+
+url: https://leezx.github.io/bt2m/
+
 template:
   bootstrap: 5
+  bootswatch: flatly
 
+home:
+  title: BT2M
+  sidebar:
+    structure: [license, citation, authors, dev]
+
+authors:
+  Zhixin Li:
+    href: https://scholar.google.com.au/citations?user=HxJzv4sAAAAJ&hl=en&inst=7575085548378563675
+
+navbar:
+  structure:
+    left: [intro, articles, reference, news]
+    right: [search, github]
+  components:
+   intro:
+    text: Get started
+    href: articles/a.html
+  news:
+    text: News
+    href: news/b.html
+  articles:
+    text: Vignettes
+    menu:
+    - text: Core functionality
+    - text: Title A1
+      href: articles/a.html
+    - text: Title A2
+      href: articles/b.html
+    - text: -------
+    - text: Biological context for co-expression modules
+    - text: Article B1
+      href: articles/c.html

@@ -1,126 +1,135 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>/404.html</loc>
+    <loc>https://leezx.github.io/bt2m/404.html</loc>
   </url>
   <url>
-    <loc>/LICENSE-text.html</loc>
+    <loc>https://leezx.github.io/bt2m/LICENSE-text.html</loc>
   </url>
   <url>
-    <loc>/authors.html</loc>
+    <loc>https://leezx.github.io/bt2m/articles/a.html</loc>
   </url>
   <url>
-    <loc>/index.html</loc>
+    <loc>https://leezx.github.io/bt2m/articles/b.html</loc>
   </url>
   <url>
-    <loc>/reference/AddMarkerExpressionPct.html</loc>
+    <loc>https://leezx.github.io/bt2m/articles/c.html</loc>
   </url>
   <url>
-    <loc>/reference/Bt2mBifucation.graph.html</loc>
+    <loc>https://leezx.github.io/bt2m/authors.html</loc>
   </url>
   <url>
-    <loc>/reference/Bt2mBifucation.hclust.html</loc>
+    <loc>https://leezx.github.io/bt2m/index.html</loc>
   </url>
   <url>
-    <loc>/reference/Bt2mBifucation.kmeans.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/AddMarkerExpressionPct.html</loc>
   </url>
   <url>
-    <loc>/reference/Bt2mColors.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/Bt2mBifucation.graph.html</loc>
   </url>
   <url>
-    <loc>/reference/Bt2mEnrichGO.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/Bt2mBifucation.hclust.html</loc>
   </url>
   <url>
-    <loc>/reference/DEG.cluster.list.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/Bt2mBifucation.kmeans.html</loc>
   </url>
   <url>
-    <loc>/reference/DataframeToVector.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/Bt2mColors.html</loc>
   </url>
   <url>
-    <loc>/reference/DrawBarplotGO.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/Bt2mEnrichGO.html</loc>
   </url>
   <url>
-    <loc>/reference/DrawBt2mClusterTree.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/DEG.cluster.list.html</loc>
   </url>
   <url>
-    <loc>/reference/DrawGOchain.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/DataframeToVector.html</loc>
   </url>
   <url>
-    <loc>/reference/DrawMarkerChainDotplot.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/DrawBarplotGO.html</loc>
   </url>
   <url>
-    <loc>/reference/DrawMarkerChainHeatmap.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/DrawBt2mClusterTree.html</loc>
   </url>
   <url>
-    <loc>/reference/FindBifurcationResolution.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/DrawGOchain.html</loc>
   </url>
   <url>
-    <loc>/reference/GetClusterChain.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/DrawMarkerChainDotplot.html</loc>
   </url>
   <url>
-    <loc>/reference/GetInitialBifurcation.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/DrawMarkerChainHeatmap.html</loc>
   </url>
   <url>
-    <loc>/reference/GetTestData.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/FindBifurcationResolution.html</loc>
   </url>
   <url>
-    <loc>/reference/HGNC.gene.pairs.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/GetClusterChain.html</loc>
   </url>
   <url>
-    <loc>/reference/IdentifyBinaryMarkers.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/GetInitialBifurcation.html</loc>
   </url>
   <url>
-    <loc>/reference/JASPAR.motif.rmDup.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/GetTestData.html</loc>
   </url>
   <url>
-    <loc>/reference/MGI.gene.pairs.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/HGNC.gene.pairs.html</loc>
   </url>
   <url>
-    <loc>/reference/OrderCluster.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/IdentifyBinaryMarkers.html</loc>
   </url>
   <url>
-    <loc>/reference/PrepareExpressionMatrix.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/JASPAR.motif.rmDup.html</loc>
   </url>
   <url>
-    <loc>/reference/RemoveDuplicatedGO.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/MGI.gene.pairs.html</loc>
   </url>
   <url>
-    <loc>/reference/RemoveDuplicatedMarker.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/OrderCluster.html</loc>
   </url>
   <url>
-    <loc>/reference/RenameBt2m.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/PrepareExpressionMatrix.html</loc>
   </url>
   <url>
-    <loc>/reference/RunBt2m.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/RemoveDuplicatedGO.html</loc>
   </url>
   <url>
-    <loc>/reference/WriteBt2mIntoSeurat.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/RemoveDuplicatedMarker.html</loc>
   </url>
   <url>
-    <loc>/reference/add.missing.genes.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/RenameBt2m.html</loc>
   </url>
   <url>
-    <loc>/reference/clusterProfilerORA.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/RunBt2m.html</loc>
   </url>
   <url>
-    <loc>/reference/gene.anno.GRCh38.v3.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/WriteBt2mIntoSeurat.html</loc>
   </url>
   <url>
-    <loc>/reference/gene.anno.mm10.v3.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/add.missing.genes.html</loc>
   </url>
   <url>
-    <loc>/reference/index.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/clusterProfilerORA.html</loc>
   </url>
   <url>
-    <loc>/reference/lr.pair.all.uniq.hs.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/gene.anno.GRCh38.v3.html</loc>
   </url>
   <url>
-    <loc>/reference/lr.pair.all.uniq.mm.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/gene.anno.mm10.v3.html</loc>
   </url>
   <url>
-    <loc>/reference/subsetSeuratObj.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/index.html</loc>
   </url>
   <url>
-    <loc>/reference/subset_cells.html</loc>
+    <loc>https://leezx.github.io/bt2m/reference/lr.pair.all.uniq.hs.html</loc>
+  </url>
+  <url>
+    <loc>https://leezx.github.io/bt2m/reference/lr.pair.all.uniq.mm.html</loc>
+  </url>
+  <url>
+    <loc>https://leezx.github.io/bt2m/reference/subsetSeuratObj.html</loc>
+  </url>
+  <url>
+    <loc>https://leezx.github.io/bt2m/reference/subset_cells.html</loc>
   </url>
 </urlset>
