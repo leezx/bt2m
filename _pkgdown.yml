@@ -23,10 +23,10 @@ navbar:
    intro:
     text: Get started
     href: articles/a.html
-  news:
+   news:
     text: News
     href: news/b.html
-  articles:
+   articles:
     text: Vignettes
     menu:
     - text: Core functionality
