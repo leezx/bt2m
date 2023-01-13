@@ -4,7 +4,12 @@
 \alias{FindBifurcationResolution}
 \title{Find the best resolution for bifurcation in graph-based clustering}
 \usage{
-FindBifurcationResolution(seuratObj, resolution.sets = 50)
+FindBifurcationResolution(
+  seuratObj,
+  resolution.sets = 50,
+  slot = "data",
+  assay = "RNA"
+)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}

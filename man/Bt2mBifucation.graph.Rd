@@ -4,7 +4,12 @@
 \alias{Bt2mBifucation.graph}
 \title{Bifurcation based on graph-based clustering}
 \usage{
-Bt2mBifucation.graph(seuratObj, resolution.sets = 50)
+Bt2mBifucation.graph(
+  seuratObj,
+  resolution.sets = 50,
+  slot = "data",
+  assay = "RNA"
+)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}

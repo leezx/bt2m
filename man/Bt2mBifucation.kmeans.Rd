@@ -4,7 +4,12 @@
 \alias{Bt2mBifucation.kmeans}
 \title{Bifurcation based on K-means clustering}
 \usage{
-Bt2mBifucation.kmeans(seuratObj, method = "euclidean")
+Bt2mBifucation.kmeans(
+  seuratObj,
+  method = "euclidean",
+  slot = "data",
+  assay = "RNA"
+)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}

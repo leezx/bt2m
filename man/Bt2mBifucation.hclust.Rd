@@ -4,7 +4,12 @@
 \alias{Bt2mBifucation.hclust}
 \title{Bifurcation based on hierarchical clustering}
 \usage{
-Bt2mBifucation.hclust(seuratObj, method = "euclidean")
+Bt2mBifucation.hclust(
+  seuratObj,
+  method = "euclidean",
+  slot = "data",
+  assay = "RNA"
+)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}
