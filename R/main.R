@@ -39,9 +39,14 @@ RunBt2m.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
                     max.level.num = 20, min.cell.count = 50, resolution.sets = 30, verbose = T) {
   # basic info
   message(paste("Current Default Assay is", DefaultAssay(seuratObj), sep = " "))
+  seuratObj$cellName <- colnames(seuratObj)
   # check info
-  if (length(GetAssayData(seuratObj, slot = slot, assay = assay)) == 0) {
-    message(sprintf("Input data under slot: %s and assay %s is empty, please creat/scale it...", slot, assay))
+  tmp.exprM <- GetAssayData(seuratObj, slot = slot, assay = assay)
+  if (length(tmp.exprM) == 0) {
+    message(sprintf("Input data under slot: %s, and assay: %s, is empty, please creat/scale it...", slot, assay))
+  } else {
+    message(sprintf("Input data under slot: %s, and assay: %s, is %s cell x %s features", 
+                    slot, assay, ncol(tmp.exprM), nrow(tmp.exprM)))
   }
   # key index
   # level index: 1-20
@@ -82,6 +87,7 @@ RunBt2m.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
       # get cells
       # message("get tmp.cells...")
       tmp.cells <- bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$cellName
+      # message(length(tmp.cells))
       # if there are no marker for the previous level, endpoint
       if (grepl("end", j)) {
         bt2m.cellMeta[tmp.cells, next.level.index] <- j
@@ -103,17 +109,18 @@ RunBt2m.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
       # binary clustering
       # message(length(tmp.cells))
       # subset funciton have problem
-      tmp <- rep(F, ncol(seuratObj))
-      names(tmp) <- colnames(seuratObj)
-      tmp[tmp.cells] <- T
-      seuratObj$select_cells <- factor(tmp, levels = c(T, F))
-      tmp.seuratObj <- subset(seuratObj, subset = select_cells == T)
-      # tmp.seuratObj <- subset(seuratObj, subset = cellName %in% tmp.cells) # can't find tmp.cells, don't know why?
+      tmp.seuratObj <- subsetSeuratObjByCells(seuratObj, tmp.cells)
+      # tmp.seuratObj <- subset(seuratObj, subset = cellName %in% tmp.cells) 
+      # can't find tmp.cells, don't know why?
       #
-      if (method == "graph") {tmp.seuratObj <- Bt2mBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets, slot = slot, assay = assay)}
-      else if (method == "hclust") {tmp.seuratObj <- Bt2mBifucation.hclust(tmp.seuratObj, slot = slot, assay = assay)}
-      else if (method == "kmeans") {tmp.seuratObj <- Bt2mBifucation.kmeans(tmp.seuratObj, slot = slot, assay = assay)}
-      else {message("Please select one method in: graph, hclust, kmeans!")}
+      if (method == "graph") {
+          tmp.seuratObj <- Bt2mBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets, 
+                                                slot = slot, assay = assay)
+      } else if (method == "hclust") {
+          tmp.seuratObj <- Bt2mBifucation.hclust(tmp.seuratObj, slot = slot, assay = assay)
+      } else if (method == "kmeans") {
+          tmp.seuratObj <- Bt2mBifucation.kmeans(tmp.seuratObj, slot = slot, assay = assay)
+      } else {message("Please select one method in: graph, hclust, kmeans!")}
       # check clustering result
       if (length(unique(tmp.seuratObj@active.ident)) != 2) {
         message("Cannot do bifurcation. Set bigger resolution.sets!!!")
@@ -531,13 +538,13 @@ clusterProfilerORA <- function(geneList=markerList, organism="hs") {
 #' @return A subset of seurat object
 #' @export
 #'
-subsetSeuratObj <- function(seuratObj, tmp.cells) {
+subsetSeuratObjByCells <- function(seuratObj, tmp.cells) {
   # tmp.cells <- rownames(tmp.bt2m.cellMeta.3)
   tmp <- rep(F, ncol(seuratObj))
   names(tmp) <- colnames(seuratObj)
   tmp[tmp.cells] <- T
   seuratObj$select_cells <- factor(tmp, levels = c(T, F))
-  tmp.seuratObj <- subset(seuratObj, subset = select_cells == T)
+  tmp.seuratObj <- subset(seuratObj, select_cells == TRUE)
   if (sum(colnames(tmp.seuratObj)!=names((tmp.seuratObj@active.ident))) != 0) stop("colnames in seuratObj and active.ident not match")
   return(tmp.seuratObj)
 }

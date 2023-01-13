@@ -49,11 +49,11 @@ FindBifurcationResolution <- function(seuratObj, resolution.sets = 50, slot = "d
 Bt2mBifucation.graph <- function(seuratObj, resolution.sets = 50, slot = "data", assay = "RNA") {
   # run PCA and SNN
   #message("run Bt2mBifucation.graph...")
-  #message(paste("Processing ", nrow(seuratObj)," gene and ", ncol(seuratObj), " cells", sep = ""))
+  message(paste("Processing ", nrow(seuratObj)," gene and ", ncol(seuratObj), " cells", sep = ""))
   seuratObj <- RunPCA(seuratObj, slot = slot, assay = assay, verbose = F)
   seuratObj <- FindNeighbors(seuratObj, dims = 1:10, verbose = F)
   # get optimal resolution
-  optimal_resolution <- FindBifurcationResolution(seuratObj, resolution.sets = resolution.sets)
+  optimal_resolution <- FindBifurcationResolution(seuratObj, resolution.sets = resolution.sets, slot = slot, assay = assay)
   seuratObj <- FindClusters(seuratObj, resolution = optimal_resolution, verbose = F)
   return(seuratObj)
 }

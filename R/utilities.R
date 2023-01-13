@@ -111,13 +111,6 @@ add.background.point.facet.grid <- function(all_tsne, cluster.order, sample.orde
   return(merged_df)
 }
 
-#' a subset function for seurat obj, origninal cannot work sometimes
-subset_cells <- function(seuratObj, condition) {
-    names(condition) <- colnames(seuratObj)
-    seuratObj$select_cells <- factor(condition, levels = c(T, F))
-    tmp.seuratObj <- subset(seuratObj, subset = select_cells == T)
-    return(tmp.seuratObj)
-}
 
 #' A general function to identify DEGs between case and control
 DEG.cluster.list <- function(seuratObj, cluster.list, ident.1 = "Vcl cKO", ident.2 = "Control", assay = "RNA") {
