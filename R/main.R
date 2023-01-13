@@ -20,6 +20,32 @@ bestMarkerAlongChain <- function(seuratObj, moduleChain) {
   return(moduleChain.rmDup)
 }
 
+# judge if a cell group is divisible or not
+cellDivisibilityCheck <- function(seuratObj) {
+  # no high-quality unique marker
+  # too many depth for contious cell group
+  return(seuratObj)
+}
+
+#' Nitialize feature annotation data for each assay
+#'
+#' @param seuratObj A Seurat object
+#' @param slot The method to perform bifurcation clustering "graph (default), hclust or kmeans"
+#' @param assay Minimal number of markers to confirm a bifurcation
+#'
+#' @return A list. cellMeta contains the preliminary bifurcation for each level
+#' marker_chain contains all the significant markers for each cluster
+#' bifucation contains the bifurcation details (parent, child1, child2)
+#' @export
+#'
+InitializeFeatureAnno <- function(seuratObj, slot = "count", assay = "RNA") {
+    tmp.exprM <- GetAssayData(seuratObj, slot = slot, assay = assay)
+    seuratObj@misc$feature.data <- list()
+    seuratObj@misc$feature.data[[assay]] <- data.frame(row.names = rownames(seuratObj@assays$RNA@counts),
+                                                   gene_name = rownames(seuratObj@assays$RNA@counts))
+    seuratObj
+}
+
 #' The main function to perform iteratively bifurcation clustering
 #'
 #' @param seuratObj A Seurat object
@@ -36,7 +62,7 @@ bestMarkerAlongChain <- function(seuratObj, moduleChain) {
 #' @export
 #'
 RunBt2m.single <- function(seuratObj, slot = "data", assay = "RNA", method = "graph", min.marker.num = 100, 
-                    max.level.num = 20, min.cell.count = 50, resolution.sets = 30, verbose = T) {
+                    max.level.num = 20, min.cell.count = 50, resolution.sets = 51, verbose = T) {
   # basic info
   message(paste("Current Default Assay is", DefaultAssay(seuratObj), sep = " "))
   seuratObj$cellName <- colnames(seuratObj)
@@ -60,6 +86,7 @@ RunBt2m.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
   # verbose <- T
   # key file 1: the cell annotation dataframe
   seuratObj$cellName <- as.character(colnames(seuratObj))
+  # create meta data
   bt2m.cellMeta <- data.frame(row.names = seuratObj$cellName, cellName=seuratObj$cellName, stringsAsFactors = F)
   # add initial one
   bt2m.cellMeta[,"L0"] <- 1
@@ -132,7 +159,7 @@ RunBt2m.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
       # write annotation to the next level
       bt2m.cellMeta[tmp.seuratObj$cellName, next.level.index] <- as.integer(tmp.seuratObj@active.ident) + 2*(j-1)
       # get markers
-      binary_markers <- IdentifyBinaryMarkers(tmp.seuratObj)
+      binary_markers <- FindBinaryMarkers(tmp.seuratObj)
       b1.markers <- binary_markers[["b1"]]
       b2.markers <- binary_markers[["b2"]]
       # set end point
