@@ -6,6 +6,20 @@ globalVariables(
   package = "bt2m",
   add = TRUE
 )
+
+# new functions
+# judge the discrete and continuous cell
+discreteOrContinuous <- function(seuratObj, group) {
+  #
+  return("discrete or continuous")
+}
+
+# find best marker along 1 chain
+bestMarkerAlongChain <- function(seuratObj, moduleChain) {
+  #
+  return(moduleChain.rmDup)
+}
+
 #' The main function to perform iteratively bifurcation clustering
 #'
 #' @param seuratObj A Seurat object
@@ -21,8 +35,14 @@ globalVariables(
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-RunBt2m <- function(seuratObj, method = "graph", min.marker.num = 100, max.level.num = 20,
-                       min.cell.count = 50, resolution.sets = 30, verbose = T) {
+RunBt2m.single <- function(seuratObj, slot = "data", assay = "RNA", method = "graph", min.marker.num = 100, 
+                    max.level.num = 20, min.cell.count = 50, resolution.sets = 30, verbose = T) {
+  # basic info
+  message(paste("Current Default Assay is", DefaultAssay(seuratObj), sep = " "))
+  # check info
+  if (length(GetAssayData(seuratObj, slot = slot, assay = assay)) == 0) {
+    message(sprintf("Input data under slot: %s and assay %s is empty, please creat/scale it...", slot, assay))
+  }
   # key index
   # level index: 1-20
   # cluster index: L1_(1..n)
@@ -79,7 +99,7 @@ RunBt2m <- function(seuratObj, method = "graph", min.marker.num = 100, max.level
         # message(paste(tmp.cluster.index, "has no enough cells, this is a end point...", sep = " "))
         next
       }
-      #
+      ###################
       # binary clustering
       # message(length(tmp.cells))
       # subset funciton have problem
@@ -90,9 +110,9 @@ RunBt2m <- function(seuratObj, method = "graph", min.marker.num = 100, max.level
       tmp.seuratObj <- subset(seuratObj, subset = select_cells == T)
       # tmp.seuratObj <- subset(seuratObj, subset = cellName %in% tmp.cells) # can't find tmp.cells, don't know why?
       #
-      if (method == "graph") {tmp.seuratObj <- Bt2mBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets)}
-      else if (method == "hclust") {tmp.seuratObj <- Bt2mBifucation.hclust(tmp.seuratObj)}
-      else if (method == "kmeans") {tmp.seuratObj <- Bt2mBifucation.kmeans(tmp.seuratObj)}
+      if (method == "graph") {tmp.seuratObj <- Bt2mBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets, slot = slot, assay = assay)}
+      else if (method == "hclust") {tmp.seuratObj <- Bt2mBifucation.hclust(tmp.seuratObj, slot = slot, assay = assay)}
+      else if (method == "kmeans") {tmp.seuratObj <- Bt2mBifucation.kmeans(tmp.seuratObj, slot = slot, assay = assay)}
       else {message("Please select one method in: graph, hclust, kmeans!")}
       # check clustering result
       if (length(unique(tmp.seuratObj@active.ident)) != 2) {

@@ -9,13 +9,13 @@
 #' @return The best resolution which can bifurcate all cells
 #' @export
 #'
-FindBifurcationResolution <- function(seuratObj, resolution.sets = 50) {
+FindBifurcationResolution <- function(seuratObj, resolution.sets = 50, slot = "data", assay = "RNA") {
   # 二分查找
   optimal_resolution <- 0
   # 顺序or倒序
   for (resolution in seq(0,1,length.out = resolution.sets)) {
     # 从小到大搜索到第一个cluster_number>1的resolution，0到多的一个区间
-    seuratObj <- FindClusters(seuratObj, resolution = resolution, verbose = F)
+    seuratObj <- FindClusters(seuratObj, slot = slot, assay = assay, resolution = resolution, verbose = F)
     cluster_number <- length(unique(seuratObj@active.ident))
     if (cluster_number>1) {
       # 倒序搜索到第一个
@@ -46,11 +46,11 @@ FindBifurcationResolution <- function(seuratObj, resolution.sets = 50) {
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
 #'
-Bt2mBifucation.graph <- function(seuratObj, resolution.sets = 50) {
+Bt2mBifucation.graph <- function(seuratObj, resolution.sets = 50, slot = "data", assay = "RNA") {
   # run PCA and SNN
   #message("run Bt2mBifucation.graph...")
   #message(paste("Processing ", nrow(seuratObj)," gene and ", ncol(seuratObj), " cells", sep = ""))
-  seuratObj <- RunPCA(seuratObj, verbose = F)
+  seuratObj <- RunPCA(seuratObj, slot = slot, assay = assay, verbose = F)
   seuratObj <- FindNeighbors(seuratObj, dims = 1:10, verbose = F)
   # get optimal resolution
   optimal_resolution <- FindBifurcationResolution(seuratObj, resolution.sets = resolution.sets)
@@ -66,8 +66,8 @@ Bt2mBifucation.graph <- function(seuratObj, resolution.sets = 50) {
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
 #'
-Bt2mBifucation.hclust <- function(seuratObj, method="euclidean") {
-  seuratObj <- RunPCA(seuratObj, verbose = F)
+Bt2mBifucation.hclust <- function(seuratObj, method="euclidean", slot = "data", assay = "RNA") {
+  seuratObj <- RunPCA(seuratObj, slot = slot, assay = assay, verbose = F)
   data.use <- Embeddings(object = seuratObj[["pca"]])
   if (method=="euclidean") {
     distMat <- parDist(data.use, threads = 3, method = "euclidean")
@@ -89,8 +89,8 @@ Bt2mBifucation.hclust <- function(seuratObj, method="euclidean") {
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
 #'
-Bt2mBifucation.kmeans <- function(seuratObj, method="euclidean") {
-  seuratObj <- RunPCA(seuratObj, verbose = F)
+Bt2mBifucation.kmeans <- function(seuratObj, method="euclidean", slot = "data", assay = "RNA") {
+  seuratObj <- RunPCA(seuratObj, slot = slot, assay = assay, verbose = F)
   data.use <- Embeddings(object = seuratObj[["pca"]])
   if (method=="euclidean") {
     distMat <- parDist(data.use, threads = 3, method = "euclidean")
