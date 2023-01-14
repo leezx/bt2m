@@ -84,7 +84,172 @@ InitializeFeatureAnno <- function(seuratObj, slot = "count", assay = "RNA") {
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-
+RunBT2M.single <- function(seuratObj, slot = "data", assay = "RNA", method = "graph", min.marker.num = 100, 
+                    max.level.num = 20, min.cell.count = 50, resolution.sets = 51, verbose = F) {
+  # basic info
+  message(paste("Current/Default Assay is", DefaultAssay(seuratObj), sep = " "))
+  seuratObj$cellName <- colnames(seuratObj)
+  # check info
+  tmp.exprM <- GetAssayData(seuratObj, slot = slot, assay = assay)
+  if (length(tmp.exprM) == 0) {
+    message(sprintf("Input data under slot: %s, and assay: %s, is empty, please creat/scale it...", slot, assay))
+  } else {
+    message(sprintf("Input data under slot: %s, and assay: %s, is %s cell x %s features", 
+                    slot, assay, ncol(tmp.exprM), nrow(tmp.exprM)))
+  }
+  # key index
+  # level index: 1-20
+  # cluster index: L1_(1..n)
+  # method = "graph"; min.marker.num = 100; max.level.num = 20; min.cell.count = 50; verbose = T # for quite test
+  # suppress warnings
+  options(warn = -1, stringsAsFactors = F)
+  # min.marker.num <- 100
+  # max.level.num <- 20
+  # min.cell.count <- 50 # must be more than number PCs
+  # verbose <- T
+  # key file 1: the cell annotation dataframe
+  seuratObj$cellName <- as.character(colnames(seuratObj))
+  # create meta data
+  bt2m.cellMeta <- data.frame(row.names = seuratObj$cellName, cellName=seuratObj$cellName, stringsAsFactors = F)
+  # add initial one
+  bt2m.cellMeta[,"L0"] <- 1
+  # add default L1-max.level.num
+  for (i in paste("L", 1:max.level.num, sep = "")) {
+    # print(i)
+    bt2m.cellMeta[,i] <- 0
+  }
+  #
+  # cannot start from specifc level, the marker list will be chaos
+  bt2m.marker.chain <- data.frame()
+  bt2m.parentChild <- data.frame()
+  bt2m.clusterAnno <- data.frame()
+  ######################## Main Loop ###########################
+  # iteratively bifurcation until no enough markers can be found
+  for (i in 0:max.level.num) {
+    # prevoius.level.index <- paste("L",i-1,sep = "")
+    tmp.level.index <- paste("L",i,sep = "") # for getting data, current level
+    next.level.index <- paste("L",i+1,sep = "") # for writing data, next level
+    message(paste("We are now at", tmp.level.index, sep = " "))
+    # small testing
+    # if (tmp.level.index=="L3") break
+    ######################## second Loop ###########################
+    for (j in unique(bt2m.cellMeta[,tmp.level.index])) {
+      # print(j)
+      tmp.cluster.index <- paste(tmp.level.index, j, sep = "_") # this will be L1_1
+      # get cells
+      # message("get tmp.cells...")
+      tmp.cells <- bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$cellName
+      # message(length(tmp.cells))
+      # subset funciton have problem
+      tmp.seuratObj <- subsetSeuratObjByCells(seuratObj, tmp.cells)
+      # tmp.seuratObj <- subset(seuratObj, subset = cellName %in% tmp.cells) 
+      # can't find tmp.cells, don't know why?
+      # judge the discrete and continuous cell
+      # make sure every cluster was covered, no `next or break` before
+      tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=discreteOrContinuous(tmp.seuratObj))
+      bt2m.clusterAnno <- rbind(bt2m.clusterAnno, tmp.clusterAnno)
+      ######### pass end node flag to next level ##########
+      if (grepl("end", j)) {
+        bt2m.cellMeta[tmp.cells, next.level.index] <- j
+        # message(paste(tmp.cluster.index, "was an end point, skipping...", sep = " "))
+        next
+      } else {
+        if (verbose) message(paste("Bifurcating", tmp.cluster.index, "...", sep = " "))
+      }
+      # For df, if one column has chr"end point", it will be characters, just tranform "1" to 1
+      j <- as.numeric(j) # proccess the end point
+      ######### set end node flag 1 ##########
+      # must do seperately, if no enough cells, cannot do clustering
+      if (length(tmp.cells) <= min.cell.count) {
+        # exit when cells is less than 50
+        message(paste("only have ", length(tmp.cells), " cells, set it as an end node", sep=""))
+        # set next level
+        bt2m.cellMeta[tmp.cells, next.level.index] <- paste("end", next.level.index, 2*j-1, sep = "-")
+        # message(paste(tmp.cluster.index, "has no enough cells, this is a end point...", sep = " "))
+        next
+      }
+      ######################## Main function ###########################
+      # binary clustering
+      if (method == "graph") {
+          tmp.seuratObj <- Bt2mBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets, graph.name = "RNA_snn",
+                                                slot = slot, assay = assay, verbose = verbose)
+      } else if (method == "hclust") {
+          tmp.seuratObj <- Bt2mBifucation.hclust(tmp.seuratObj, slot = slot, assay = assay)
+      } else if (method == "kmeans") {
+          tmp.seuratObj <- Bt2mBifucation.kmeans(tmp.seuratObj, slot = slot, assay = assay)
+      } else {message("Please select one method in: graph, hclust, kmeans!")}
+      # check clustering result
+      if (length(unique(tmp.seuratObj@active.ident)) != 2) {
+        message("Cannot do bifurcation. Set bigger resolution.sets!!!")
+        stop()
+      }
+      # assign name to the marker dfs
+      next.cluster.index.1 <- paste(next.level.index, 2*j-1, sep = "_")
+      next.cluster.index.2 <- paste(next.level.index, 2*j, sep = "_")
+      # write annotation to the next level
+      ######### write to cellMeta ##########
+      # this tricky, there is a rule for binary tree, we just use it here. Will rename the cluster later
+      bt2m.cellMeta[tmp.seuratObj$cellName, next.level.index] <- as.integer(tmp.seuratObj@active.ident) + 2*(j-1)
+      ######################## Binary markers ###########################
+      binary_markers <- FindBinaryMarkers(tmp.seuratObj)
+      b1.markers <- binary_markers[["b1"]]
+      b2.markers <- binary_markers[["b2"]]
+      ######### write to marker.chain ##########
+      if (nrow(b1.markers) >= min.marker.num) {
+        b1.markers$parent <- tmp.cluster.index
+        b1.markers$cluster <- next.cluster.index.1
+        # creat marker unique ID
+        b1.markers$markerID <- paste(b1.markers$cluster, b1.markers$gene, sep = "_")
+        bt2m.marker.chain <- rbind(bt2m.marker.chain, b1.markers)
+        # remove duplicate marker
+        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.1)
+      }
+      if (nrow(b2.markers) >= min.marker.num) {
+        b2.markers$parent <- tmp.cluster.index
+        b2.markers$cluster <- next.cluster.index.2
+        # creat marker unique ID
+        b2.markers$markerID <- paste(b2.markers$cluster, b2.markers$gene, sep = "_")
+        bt2m.marker.chain <- rbind(bt2m.marker.chain, b2.markers)
+        # remove duplicate marker
+        # this could be slow, but this is normal, we need to remove duplicate once we add new, globally
+        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.2)
+      }
+      ######### set end node flag 2 ##########
+      if ((nrow(b1.markers) < min.marker.num) && (nrow(b2.markers) < min.marker.num)) {
+        # message(paste(tmp.cluster.index, "has no marker, this is a end point...", sep = " "))
+        # set end point (take care, what the name is, when no marker)
+        # must add "end" and "level" to avoid the mixture between levels
+        bt2m.cellMeta[tmp.cells, next.level.index] <- paste("end", next.level.index, 2*j-1, sep = "-")
+      } else {
+        ######### write to bifucation ##########
+        tmp.bifucation <- data.frame(parent=tmp.cluster.index, child1=next.cluster.index.1, 
+                                     child2=next.cluster.index.2)
+        bt2m.parentChild <- rbind(bt2m.parentChild, tmp.bifucation)
+        if (verbose) message(sprintf("Successfully split %s to %s and %s", tmp.cluster.index,
+                                     next.cluster.index.1, next.cluster.index.2))
+      }
+    }
+    ######### global end point ##########
+    # exist running when all cluster are end points
+    if (sum(!grepl("end", unique(bt2m.cellMeta[,tmp.level.index]))) == 0) {
+      message("Bifurcating stopped! No more clusters can be split")
+      break
+    }
+  }
+  ############### end of inner loop ###################
+  # remove emplty levels
+  bt2m.cellMeta <- bt2m.cellMeta[,colSums(bt2m.cellMeta!=0)!=0]
+  bt2m.cellMeta$cellName <- NULL
+  # remove same columns
+  bt2m.cellMeta <- bt2m.cellMeta[,!duplicated(t(bt2m.cellMeta))]
+  # sort the df last to first, not the final one
+  for (i in ncol(bt2m.cellMeta):1) {
+    bt2m.cellMeta <- bt2m.cellMeta[order( bt2m.cellMeta[,i] ),]
+  }
+  return(list(cellMeta=bt2m.cellMeta, markerChain=bt2m.marker.chain, parentChild=bt2m.parentChild, 
+              clusterAnno=bt2m.clusterAnno))
+  ############### end of outer loop ###################
+}
 
 #' order the clusters according to similarity inside the bt2m result
 #'
