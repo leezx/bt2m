@@ -45,11 +45,15 @@ FindBinaryMarkers <- function(seuratObj, method = "presto", slot = "data", assay
   #
   tmp.markers <- subset(tmp.markers, p_val<p_value & p_val_adj<p_value & (avg_log2FC*correlation > 0))
   # strong filtering
-  tmp.markers <- subset(tmp.markers, abs(avg_log2FC)>min_avg_log2FC, abs(correlation)>min_correlation)
+  tmp.markers <- subset(tmp.markers, abs(avg_log2FC)>min_avg_log2FC & abs(correlation)>min_correlation)
   # b1 is the marker for group 1
   tmp.b1.markers <- subset(tmp.markers, avg_log2FC<0)
+  # reverse negative to positive value
+  tmp.b1.markers$avg_log2FC <- -tmp.b1.markers$avg_log2FC
+  tmp.b1.markers$correlation <- -tmp.b1.markers$correlation
   # b2 is the marker for group 2
   tmp.b2.markers <- subset(tmp.markers, avg_log2FC>0)
+  #
   binary_markers[["b1"]] <- tmp.b1.markers
   binary_markers[["b2"]] <- tmp.b2.markers
   return(binary_markers)

@@ -30,6 +30,7 @@ Imports:
   stringr,
   cowplot,
   plyr
+  igraph
 Suggests:
   testthat
 URL: https://github.com/leezx/bt2m
