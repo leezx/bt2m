@@ -9,9 +9,21 @@ globalVariables(
 
 # new functions
 # judge the discrete and continuous cell
-discreteOrContinuous <- function(seuratObj, group) {
+discreteOrContinuous <- function(seuratObj) {
   #
-  return("discrete or continuous")
+  seuratObj <- Seurat::FindNeighbors(object = seuratObj, k.param = 5, prune.SNN = 1/15, dims = 1:2, 
+                                      reduction = "umap", compute.SNN = T, verbose = F)
+  g <- seuratObj@graphs$RNA_snn
+  attributes(g)[[1]] <- NULL
+  attributes(g)$class <- "dgCMatrix"
+  g <- igraph::graph_from_adjacency_matrix(adjmatrix = g, mode = "undirected", diag = F, weighted = TRUE, add.colnames = TRUE)
+  # plot(g, layout = as.matrix(pbmc.sub@reductions$umap@cell.embeddings[, c("UMAP_1", "UMAP_2")]), vertex.label=NA, vertex.size = 1, edge.curved = 0, edge.width = 0.5, vertex.label.dist = 1.1, vertex.label.degree = -pi/4, vertex.label.family = "Helvetica", vertex.label.font = 1, vertex.label.cex = 0, margin = 0)
+  ec <- edge_connectivity(g)
+  if (ec < 2) {
+    return("discrete")
+  } else {
+    return("continuous")
+  }
 }
 
 # find best marker along 1 chain
