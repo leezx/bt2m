@@ -18,7 +18,7 @@ globalVariables(
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-isConnected.igraph <- function(seuratObj) {
+isConnected.igraph <- function(seuratObj, returnFormat = "is_connected") {
     #
     seuratObj <- Seurat::FindNeighbors(object = seuratObj, k.param = 10, prune.SNN = 1/15, dims = 1:2, 
                                       reduction = "umap", compute.SNN = T, verbose = F)
@@ -32,7 +32,11 @@ isConnected.igraph <- function(seuratObj) {
     #     vertex.label.degree = -pi/4, vertex.label.family = "Helvetica", vertex.label.font = 1, 
     #     vertex.label.cex = 0, margin = 0)
     # components(g, mode = "strong") # a good function
-    return(igraph::is_connected(g, mode = "strong"))
+    if (returnFormat == "is_connected") {
+      return(igraph::is_connected(g, mode = "strong")) 
+      } else if (returnFormat == "components") {
+        return(igraph::components(g, mode = "strong"))
+      }
 }
 
 #' judge the discrete and continuous cell
