@@ -18,6 +18,34 @@ globalVariables(
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
+isConnected.igraph <- function(seuratObj) {
+    #
+    seuratObj <- Seurat::FindNeighbors(object = seuratObj, k.param = 10, prune.SNN = 1/15, dims = 1:2, 
+                                      reduction = "umap", compute.SNN = T, verbose = F)
+    g <- seuratObj@graphs$RNA_snn
+    attributes(g)[[1]] <- NULL
+    attributes(g)$class <- "dgCMatrix"
+    g <- igraph::graph_from_adjacency_matrix(adjmatrix = g, mode = "undirected", diag = F, 
+                                             weighted = TRUE, add.colnames = TRUE)
+    # plot(g, layout = as.matrix(tmp.seuset.flt@reductions$umap@cell.embeddings[, c("UMAP_1", "UMAP_2")]), 
+    #     vertex.label=NA, vertex.size = 1, edge.curved = 0, edge.width = 0.5, vertex.label.dist = 1.1, 
+    #     vertex.label.degree = -pi/4, vertex.label.family = "Helvetica", vertex.label.font = 1, 
+    #     vertex.label.cex = 0, margin = 0)
+    # components(g, mode = "strong") # a good function
+    return(igraph::is_connected(g, mode = "strong"))
+}
+
+#' judge the discrete and continuous cell
+#'
+#' @param seuratObj A Seurat object
+#' @param slot The method to perform bifurcation clustering "graph (default), hclust or kmeans"
+#' @param assay Minimal number of markers to confirm a bifurcation
+#'
+#' @return A list. cellMeta contains the preliminary bifurcation for each level
+#' marker_chain contains all the significant markers for each cluster
+#' bifucation contains the bifurcation details (parent, child1, child2)
+#' @export
+#'
 discreteOrContinuous <- function(seuratObj) {
   #
   seuratObj <- Seurat::FindNeighbors(object = seuratObj, k.param = 5, prune.SNN = 1/15, dims = 1:2, 
