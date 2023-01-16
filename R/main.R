@@ -7,6 +7,29 @@ globalVariables(
   add = TRUE
 )
 
+#' standard pipeline for seurat
+#'
+#' @param seuratObj A Seurat object
+#' @param slot The method to perform bifurcation clustering "graph (default), hclust or kmeans"
+#' @param assay Minimal number of markers to confirm a bifurcation
+#'
+#' @return A list. cellMeta contains the preliminary bifurcation for each level
+#' marker_chain contains all the significant markers for each cluster
+#' bifucation contains the bifurcation details (parent, child1, child2)
+#' @export
+#'
+SeuratStandardPipeline <- function(seuratObj) {
+    # perform visualization and clustering steps
+    seuratObj <- NormalizeData(seuratObj, normalization.method = "LogNormalize", scale.factor = 10000, verbose = F)
+    seuratObj <- FindVariableFeatures(seuratObj, selection.method = "vst", nfeatures = 2000, verbose = F)
+    seuratObj <- FindVariableFeatures(seuratObj, verbose = F)
+    seuratObj <- ScaleData(seuratObj, features = rownames(seuratObj), verbose = F)
+    seuratObj <- RunPCA(seuratObj, features = VariableFeatures(object = seuratObj), verbose = FALSE)
+    seuratObj <- FindNeighbors(seuratObj, dims = 1:30, verbose = F)
+    # seuratObj <- FindClusters(seuratObj, resolution = 0.8, verbose = FALSE)
+    seuratObj <- RunUMAP(seuratObj, dims = 1:30, verbose = F)
+}
+
 #' judge the discrete and continuous cell
 #'
 #' @param seuratObj A Seurat object
@@ -33,7 +56,7 @@ isConnected.igraph <- function(seuratObj, returnFormat = "is_connected") {
     #     vertex.label.cex = 0, margin = 0)
     # components(g, mode = "strong") # a good function
     if (returnFormat == "is_connected") {
-      return(igraph::is_connected(g, mode = "strong")) 
+      return(ifelse(igraph::is_connected(g, mode = "strong"),"continuous","discrete")) 
       } else if (returnFormat == "components") {
         return(igraph::components(g, mode = "strong"))
       }
@@ -58,7 +81,7 @@ discreteOrContinuous <- function(seuratObj) {
   attributes(g)[[1]] <- NULL
   attributes(g)$class <- "dgCMatrix"
   g <- igraph::graph_from_adjacency_matrix(adjmatrix = g, mode = "undirected", diag = F, weighted = TRUE, add.colnames = TRUE)
-  # plot(g, layout = as.matrix(pbmc.sub@reductions$umap@cell.embeddings[, c("UMAP_1", "UMAP_2")]), vertex.label=NA, vertex.size = 1, edge.curved = 0, edge.width = 0.5, vertex.label.dist = 1.1, vertex.label.degree = -pi/4, vertex.label.family = "Helvetica", vertex.label.font = 1, vertex.label.cex = 0, margin = 0)
+  # plot(g, layout = as.matrix(seuratObj@reductions$umap@cell.embeddings[, c("UMAP_1", "UMAP_2")]), vertex.label=NA, vertex.size = 1, edge.curved = 0, edge.width = 0.5, vertex.label.dist = 1.1, vertex.label.degree = -pi/4, vertex.label.family = "Helvetica", vertex.label.font = 1, vertex.label.cex = 0, margin = 0)
   ec <- igraph::edge_connectivity(g)
   if (ec < 2) {
     return("discrete")
@@ -178,7 +201,7 @@ RunBT2M.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
       # can't find tmp.cells, don't know why?
       # judge the discrete and continuous cell
       # make sure every cluster was covered, no `next or break` before
-      tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=discreteOrContinuous(tmp.seuratObj))
+      tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=isConnected.igraph(tmp.seuratObj))
       bt2m.clusterAnno <- rbind(bt2m.clusterAnno, tmp.clusterAnno)
       ######### pass end node flag to next level ##########
       if (grepl("end", j)) {
@@ -203,18 +226,17 @@ RunBT2M.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
       ######################## Main function ###########################
       # binary clustering
       if (method == "graph") {
-          tmp.seuratObj <- Bt2mBifucation.graph(tmp.seuratObj, resolution.sets = resolution.sets, graph.name = "RNA_snn",
+          tmp.seuratObj <- Bt2mBifucation.graph(tmp.seuratObj, cAlgorithm = 4, graph.name = "RNA_snn", 
                                                 slot = slot, assay = assay, verbose = verbose)
+          if (verbose) {message(sprintf("Identify clusters %s", paste(names(table(tmp.seuratObj@active.ident)), 
+                                "cell number: ", table(tmp.seuratObj@active.ident), collapse = ", ")))}
       } else if (method == "hclust") {
           tmp.seuratObj <- Bt2mBifucation.hclust(tmp.seuratObj, slot = slot, assay = assay)
       } else if (method == "kmeans") {
           tmp.seuratObj <- Bt2mBifucation.kmeans(tmp.seuratObj, slot = slot, assay = assay)
       } else {message("Please select one method in: graph, hclust, kmeans!")}
       # check clustering result
-      if (length(unique(tmp.seuratObj@active.ident)) != 2) {
-        message("Cannot do bifurcation. Set bigger resolution.sets!!!")
-        stop()
-      }
+      if (length(unique(tmp.seuratObj@active.ident)) != 2) {stop("Cannot do bifurcation for this dataset.")}
       # assign name to the marker dfs
       next.cluster.index.1 <- paste(next.level.index, 2*j-1, sep = "_")
       next.cluster.index.2 <- paste(next.level.index, 2*j, sep = "_")
@@ -226,6 +248,7 @@ RunBT2M.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
       binary_markers <- FindBinaryMarkers(tmp.seuratObj)
       b1.markers <- binary_markers[["b1"]]
       b2.markers <- binary_markers[["b2"]]
+      if (verbose) {message(sprintf("Identify %s and %s markers for this BT.", nrow(b1.markers), nrow(b2.markers)))}
       ######### write to marker.chain ##########
       if (nrow(b1.markers) >= min.marker.num) {
         b1.markers$parent <- tmp.cluster.index

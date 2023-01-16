@@ -9,7 +9,8 @@
 #' @return The best resolution which can bifurcate all cells
 #' @export
 #'
-FindBifurcationResolution <- function(seuratObj, resolution.sets = 51, graph.name = "RNA_snn", verbose = F) {
+FindBifurcationResolution.old <- function(seuratObj, cAlgorithm = 4, resolution.sets = 51, 
+                                      graph.name = "RNA_nn", verbose = F) {
   # check
   if (is.null(tmp.seuset.flt@graphs[[graph.name]])) {
     message(sprintf("Input graph: %s is empty, please creat it before...", graph.name))
@@ -19,7 +20,8 @@ FindBifurcationResolution <- function(seuratObj, resolution.sets = 51, graph.nam
   # 顺序or倒序
   for (resolution in seq(0,1,length.out = resolution.sets)) {
     # 从小到大搜索到第一个cluster_number>1的resolution，0到多的一个区间
-    seuratObj <- FindClusters(seuratObj, graph.name = graph.name, resolution = resolution, verbose = F)
+    seuratObj <- FindClusters(seuratObj, algorithm = cAlgorithm, graph.name = graph.name, 
+                              resolution = resolution, verbose = F)
     cluster_number <- length(unique(seuratObj@active.ident))
     if (verbose) message(sprintf("resolution: %s -> cluster number: %s", resolution, cluster_number))
     if (cluster_number>1) {
@@ -31,10 +33,12 @@ FindBifurcationResolution <- function(seuratObj, resolution.sets = 51, graph.nam
       # logseq <- c(1/(resolution.sets-1) %o% 2^(0:resolution.sets)) + resolution - 1/(resolution.sets-1)
       # would be fail for continous data, sometimes close to resolution, sometimes close to 0
       # linearseq <- c(seq(resolution,resolution*4/5,length.out = resolution.sets), seq(resolution*4/5,0,length.out = resolution.sets))
+      if (resolution==0) stop("more than 2 clusters at resolution: 0!!! Please check!!!")
       linearseq <- seq(resolution, resolution-1/(resolution.sets-1), length.out = resolution.sets)
       # 从大到小搜寻第一个等于2的
       for (j in linearseq) {
-        seuratObj <- FindClusters(seuratObj, graph.name = graph.name, resolution = j, verbose = F)
+        seuratObj <- FindClusters(seuratObj, algorithm = cAlgorithm, graph.name = graph.name, 
+                                  resolution = j, verbose = F)
         cluster_number <- length(unique(seuratObj@active.ident))
         if (verbose) message(sprintf("resolution: %s -> cluster number: %s", j, cluster_number))
         if (cluster_number==2) {
@@ -48,6 +52,48 @@ FindBifurcationResolution <- function(seuratObj, resolution.sets = 51, graph.nam
   }
 }
 
+#' Find the best resolution for bifurcation in graph-based clustering
+#'
+#' @param seuratObj A Seurat object
+#' @param resolution.sets The number of resolution for searching
+#'
+#' @return The best resolution which can bifurcate all cells
+#' @export
+#'
+FindBifurcationResolution <- function(seuratObj, cAlgorithm = 4, graph.name = "RNA_nn", verbose = F) {
+    # check
+    if (is.null(tmp.seuset.flt@graphs[[graph.name]])) {
+    message(sprintf("Input graph: %s is empty, please creat it before...", graph.name))
+    }
+    # 二分查找
+    max.iter.num <- 50
+    tmp.iter.num <- 0
+    tmp.min <- 0
+    tmp.max <- 1
+    tmp.mid <- (tmp.min + tmp.max) / 2
+    seuratObj <- FindClusters(seuratObj, algorithm = cAlgorithm, graph.name = graph.name, 
+                                  resolution = tmp.mid, verbose = F)
+    tmp.cluster.num <- length(unique(seuratObj@active.ident))
+    while (tmp.cluster.num != 2) {
+        if (tmp.cluster.num < 2) {
+            tmp.min <- tmp.mid
+            tmp.mid <- (tmp.min + tmp.max) / 2
+        } else if (tmp.cluster.num > 2) {
+            tmp.max <- tmp.mid
+            tmp.mid <- (tmp.min + tmp.max) / 2
+        }
+        seuratObj <- FindClusters(seuratObj, algorithm = cAlgorithm, graph.name = graph.name, 
+                                  resolution = tmp.mid, verbose = F)
+        tmp.cluster.num <- length(unique(seuratObj@active.ident))
+        tmp.iter.num <- tmp.iter.num + 1
+        if (verbose) message(sprintf("mid resolution is: %s, get new cluster number: %s", tmp.mid, tmp.cluster.num))
+        if (tmp.iter.num > max.iter.num) {
+            stop("fail to find the resolution for 2 clusters")
+        }
+    }
+    return(tmp.mid)
+}
+
 #' Bifurcation based on graph-based clustering
 #'
 #' @param seuratObj A Seurat object
@@ -56,7 +102,8 @@ FindBifurcationResolution <- function(seuratObj, resolution.sets = 51, graph.nam
 #' @return A bifurcated Seurat object (see active.ident).
 #' @export
 #'
-Bt2mBifucation.graph <- function(seuratObj, graph.name = "RNA_snn", resolution.sets = 50, slot = "data", assay = "RNA", force = T, verbose = F) {
+Bt2mBifucation.graph <- function(seuratObj, cAlgorithm = 4, graph.name = "RNA_snn",
+                                  slot = "data", assay = "RNA", force = T, verbose = F) {
   # run PCA and SNN
   #message("run Bt2mBifucation.graph...")
   if (verbose) message(paste("Processing ", nrow(seuratObj)," gene and ", ncol(seuratObj), " cells", sep = ""))
@@ -66,14 +113,18 @@ Bt2mBifucation.graph <- function(seuratObj, graph.name = "RNA_snn", resolution.s
       seuratObj <- FindNeighbors(seuratObj, dims = 1:10, verbose = F)
   }
   # get optimal resolution
-  optimal_resolution <- FindBifurcationResolution(seuratObj, graph.name = graph.name, resolution.sets = resolution.sets, verbose = verbose)
+  optimal_resolution <- FindBifurcationResolution(seuratObj, cAlgorithm = cAlgorithm, graph.name = graph.name, 
+                                                  verbose = verbose)
   # if optimal_resolution==0, indivisiable
   if (optimal_resolution==0) {
     seuratObj@active.ident <- rep(0, ncol(seuratObj))
     names(seuratObj@active.ident) <- colnames(seuratObj)
     return(seuratObj)
   }
-  seuratObj <- FindClusters(seuratObj, graph.name = graph.name, resolution = optimal_resolution, verbose = F)
+  seuratObj <- FindClusters(seuratObj, algorithm = cAlgorithm, graph.name = graph.name, 
+                            resolution = optimal_resolution, verbose = F)
+  # make sure output clusters are c(0, 1)
+  seuratObj@active.ident <- plyr::mapvalues(seuratObj@active.ident, from = unique(seuratObj@active.ident), to = c(0,1))
   return(seuratObj)
 }
 

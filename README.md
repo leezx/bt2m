@@ -35,6 +35,13 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install(c('ComplexHeatmap', 'clusterProfiler', 'org.Hs.eg.db', 'org.Mm.eg.db'))
 ```
 
+Python packages needed
+```
+pip install leidenalg
+pip install umap-learn
+```
+
+
 ## Install the bt2m package
 ```
 install.packages("devtools")
