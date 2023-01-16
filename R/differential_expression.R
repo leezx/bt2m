@@ -11,17 +11,26 @@
 #' @return A list. b1 is the positive marker of cluster 0, b2 is the positive marker of cluster 1.
 #' @export
 #' 
-FindBinaryMarkers <- function(seuratObj, method = "presto", slot = "data", assay = "RNA", 
+FindBinaryMarkers <- function(seuratObj, method = "presto", inputFactor = F, slot = "data", assay = "RNA", 
                               p_value = 0.05, min_avg_log2FC = 0.1, min_correlation = 0.2, verbose = F){
   # first check
   if (length(unique(seuratObj@active.ident)) != 2) stop("The cluster number is not 2 for active.ident!!!")
-  if (sum(sort(unique(tmp.seuset.flt@active.ident)) == c(0,1)) != 2) stop("The cluster names are not 0 and 1.")
+  # check if the input clusters are factor or not
+  if (inputFactor) {
+    tmp.levels <- levels(seuratObj@active.ident)
+    if (is.null(tmp.levels)) stop("Please transform the cluster name to factors!!!")
+    if (length(tmp.levels) != 2) stop("Input factors, but the level number is not 2 for active.ident!!!")
+    seuratObj@active.ident <- plyr::mapvalues(seuratObj@active.ident, from = tmp.levels, to = c(0,1))
+  } else {
+    if (sum(sort(unique(seuratObj@active.ident)) == c(0,1)) != 2) stop("The cluster names are not 0 and 1.")
+  }
   # need high quality markers, correlation is the best indicator
   binary_markers <- list()
   # Positive values indicate that the gene is more highly expressed in the first group
   if (method == "presto") {
     # very fast
     seuratObj$seurat_clusters <- seuratObj@active.ident
+    if (verbose) {message(sprintf("FindBinaryMarkers for cluster: %s.", paste(unique(seuratObj$seurat_clusters, collapse=", "))))}
     tmp.markers <- presto:::wilcoxauc.Seurat(seuratObj, group_by = 'seurat_clusters', 
                                              assay = slot, seurat_assay = assay)
     tmp.markers <- subset(tmp.markers, group==0)
