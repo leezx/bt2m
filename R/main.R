@@ -124,6 +124,92 @@ InitializeFeatureAnno <- function(seuratObj, slot = "count", assay = "RNA") {
     seuratObj
 }
 
+#' Start from known cell type annotation
+#'
+#' @param seuratObj A Seurat object
+#' @param method The method to perform bifurcation clustering "graph (default), hclust or kmeans"
+#' @param min.marker.num Minimal number of markers to confirm a bifurcation
+#' @param max.level.num Maximum number of level for bifurcation
+#' @param min.cell.count Minimal number of cells to perform bifurcation (must bigger than PC number: 50)
+#' @param resolution.sets The number of resolution for searching
+#' @param verbose Print detail proccessing messages
+#'
+#' @return A list. cellMeta contains the preliminary bifurcation for each level
+#' marker_chain contains all the significant markers for each cluster
+#' bifucation contains the bifurcation details (parent, child1, child2)
+#' @export
+#'
+AgglomerativeClustering <- function(seuratObj, group, reduction = "umap", verbose = F) {
+    bt2m.cellMeta <- data.frame(known_anno=seuratObj@meta.data[,group], row.names = colnames(seuratObj),
+                            cellName = colnames(seuratObj))
+    bt2m.cellMeta$L0 <- 1
+    max.level.num <- length(unique(seuratObj@meta.data[,group]))
+    for (i in paste("L", 1:max.level.num, sep = "")) {
+        # print(i)
+        bt2m.cellMeta[,i] <- 0
+    }
+    data.use <- as.data.frame(Embeddings(object = seuratObj[[reduction]]))
+    aggr.data.use <- aggregate(data.use[, 1:ncol(data.use)], list(seuratObj@meta.data[,group]), mean)
+    rownames(aggr.data.use) <- aggr.data.use$`Group.1`
+    aggr.data.use$`Group.1` <- NULL
+    #
+    for (i in 0:max.level.num) {
+        tmp.level.index <- paste("L",i,sep = "") # for getting data, current level
+        next.level.index <- paste("L",i+1,sep = "") # for writing data, next level
+        if (verbose) message(paste("We are now at", tmp.level.index, sep = " "))
+        # must do this, pass the cluster to next level, single cluster will be skipped.
+        bt2m.cellMeta[,next.level.index] <- bt2m.cellMeta[,tmp.level.index]
+        for (j in unique(bt2m.cellMeta[,tmp.level.index])) {
+            tmp.cells <- bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$cellName
+            tmp.clusters <- unique(bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$known_anno)
+            # if only one cluster left, quit.
+            if (verbose) message(sprintf("processing cluster: %s, including celltype: %s .", j, paste(unique(tmp.clusters), collapse = ", ")))
+            if (length(tmp.clusters)==1) {
+                if (verbose) message(sprintf("processing %s cluster skipped.", tmp.clusters))
+                tmp.round <- 1 + tmp.round
+                next
+            }
+            tmp.aggr.data.use <- aggr.data.use[tmp.clusters,]
+            agn = cluster::agnes(x=tmp.aggr.data.use, diss = F, stand = T, method = "average")
+            # DendAgn = as.dendrogram(agn)
+            # plot(DendAgn)
+            tmp.BT <- dendextend::cutree(agn, k = 2)
+            # message(paste(names(tmp.BT), tmp.BT, collapse = ", "))
+            tmp.bulk.name <- plyr::mapvalues(tmp.BT, from = c(1,2), to = c(paste(names(tmp.BT)[tmp.BT==1], collapse = ","),
+                                                 paste(names(tmp.BT)[tmp.BT==2], collapse = ",")))
+            bt2m.cellMeta[tmp.cells, next.level.index] <- as.character(plyr::mapvalues(bt2m.cellMeta[tmp.cells,]$known_anno, 
+                                                                        from = names(tmp.bulk.name), 
+                                                                         to = tmp.bulk.name))
+        }
+    }
+    #
+    bt2m.cellMeta <- bt2m.cellMeta[,c(rep(T,2), !duplicated(t(bt2m.cellMeta[,3:(4+max.level.num)])))]
+    bt2m.cellMeta.head <- bt2m.cellMeta[,1:2]
+    bt2m.cellMeta <- bt2m.cellMeta[,3:7]
+    # rename
+    all.map.df <- data.frame()
+    for (i in 1:ncol(bt2m.cellMeta)) {
+    # find a key error, we start from L1
+    # all old cluster name in each level
+    tmp.cluster.name <- unique(bt2m.cellMeta[,i])
+    # add level prefix
+    tmp.cluster.name2 <- paste("L",i-1,"_",tmp.cluster.name,sep = "")
+    # give new cluster name
+    new.cluster.name <- 1:length(tmp.cluster.name2)
+    tmp.map.df <- data.frame(old_cluster=tmp.cluster.name, old_cluster_prefix=tmp.cluster.name2,
+                             new_cluster=new.cluster.name, stringsAsFactors = F, level=paste("L",i-1,sep = ""))
+    all.map.df <- rbind(all.map.df, tmp.map.df)
+    # replace old cluster name by new cluster name
+    bt2m.cellMeta[,i] <- plyr::mapvalues(bt2m.cellMeta[,i],
+                                            from = tmp.map.df$old_cluster,
+                                            to=tmp.map.df$new_cluster)
+    # break
+    }
+    #
+    bt2m.cellMeta <- cbind(bt2m.cellMeta.head, bt2m.cellMeta)
+    return(bt2m.cellMeta)
+}
+
 #' The main function to perform iteratively bifurcation clustering
 #'
 #' @param seuratObj A Seurat object
