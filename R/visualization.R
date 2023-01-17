@@ -40,14 +40,14 @@ PrepareExpressionMatrix <- function(seuratObj, bt2m.marker.chain, assay="RNA", s
 #' @export
 #'
 Bt2mColors <- function() {
-  bt2m.colors <- unique(c(brewer.pal(n = 9, name = "Set1"),
-                            brewer.pal(n = 8, name = "Dark2"),
-                            brewer.pal(n = 12, name = "Paired"),
-                            brewer.pal(n = 8, name = "Set2"),
-                            brewer.pal(n = 12, name = "Set3"),
-                            brewer.pal(n = 8, name = "Accent"),
-                            brewer.pal(n = 9, name = "Pastel1"),
-                            brewer.pal(n = 8, name = "Pastel2")
+  bt2m.colors <- unique(c(RColorBrewer::brewer.pal(n = 9, name = "Set1"),
+                            RColorBrewer::brewer.pal(n = 8, name = "Dark2"),
+                            RColorBrewer::brewer.pal(n = 12, name = "Paired"),
+                            RColorBrewer::brewer.pal(n = 8, name = "Set2"),
+                            RColorBrewer::brewer.pal(n = 12, name = "Set3"),
+                            RColorBrewer::brewer.pal(n = 8, name = "Accent"),
+                            RColorBrewer::brewer.pal(n = 9, name = "Pastel1"),
+                            RColorBrewer::brewer.pal(n = 8, name = "Pastel2")
   ))
   return(bt2m.colors)
 }
@@ -68,7 +68,7 @@ DrawMarkerChainHeatmap <- function(seuratObj, bt2m.cellMeta, bt2m.marker.chain, 
   # get data
   all.exprMat <- PrepareExpressionMatrix(seuratObj, bt2m.marker.chain, known_markers=known_markers)
   # heatmap color set
-  col_fun = colorRamp2(c(-2, 0, 3), c("green", "white", "red"))
+  col_fun = circlize::colorRamp2(c(-2, 0, 3), c("green", "white", "red"))
   # col_fun = colorRamp2(c(-2, 0, 3), c("#FF00FF","#000000","#FFFF00")) # seurat color
   col_fun(seq(-3, 3))
   # get colors
@@ -97,14 +97,14 @@ DrawMarkerChainHeatmap <- function(seuratObj, bt2m.cellMeta, bt2m.marker.chain, 
     bt2m.cellMeta[,i] <- factor(bt2m.cellMeta[,i], levels = unique(bt2m.cellMeta[,i]))
   }
   # top color bar
-  ha <- HeatmapAnnotation(
+  ha <- ComplexHeatmap::HeatmapAnnotation(
     df = bt2m.cellMeta,
     Annotation = tmp.anno.vector[rownames(bt2m.cellMeta)],
     col = color.list
   )
   #
   # options(repr.plot.width=10, repr.plot.height=7)
-  ht <- Heatmap(all.exprMat[,rownames(bt2m.cellMeta)], col = col_fun, name = "Expression",
+  ht <- ComplexHeatmap::Heatmap(all.exprMat[,rownames(bt2m.cellMeta)], col = col_fun, name = "Expression",
                 #row_split = sc3_marker$cluster, column_split = anno$col$Cluster, layer_fun = layer_fun,
                 use_raster = F,
                 top_annotation = ha, # left_annotation = la,
@@ -129,10 +129,10 @@ DrawBt2mClusterTree <- function(seuratObj, bt2m.cellMeta, node_text_size=7, node
   # tree <- clustree(seuratObj, prefix = "L", node_text_size = 7)
   # options(repr.plot.width=4, repr.plot.height=7)
   # options(repr.plot.width=4, repr.plot.height=7)
-  tree <- clustree(seuratObj, prefix = "L", node_text_size = node_text_size, node_size = node_size) +
+  tree <- clustree::clustree(seuratObj, prefix = "L", node_text_size = node_text_size, node_size = node_size) +
     theme(legend.position = "none") +
     coord_flip() + scale_y_reverse() +
-    scale_color_manual(values=brewer.pal(12,"Set3"))
+    scale_color_manual(values=RColorBrewer::brewer.pal(12,"Set3"))
   return(tree)
 }
 

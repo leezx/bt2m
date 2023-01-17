@@ -177,7 +177,7 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
     # cannot start from specifc level, the marker list will be chaos
     bt2m.marker.chain <- data.frame()
     bt2m.parentChild <- data.frame()
-    bt2m.clusterAnno <- data.frame()
+    # bt2m.clusterAnno <- data.frame()
     ######################## Main Loop ###########################
     for (i in 0:max.level.num) {
         tmp.level.index <- paste("L",i,sep = "") # for getting data, current level
@@ -193,8 +193,8 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
             tmp.clusters <- unique(bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$known_anno)
             tmp.seuratObj <- subsetSeuratObjByCells(seuratObj, tmp.cells)
             # make sure every cluster was covered, no `next or break` before
-            tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=isConnected.igraph(tmp.seuratObj))
-            bt2m.clusterAnno <- rbind(bt2m.clusterAnno, tmp.clusterAnno)
+            # tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=isConnected.igraph(tmp.seuratObj))
+            # bt2m.clusterAnno <- rbind(bt2m.clusterAnno, tmp.clusterAnno)
             ######### pass end node flag to next level ##########
             if (grepl("end", j)) {
                 bt2m.cellMeta[tmp.cells, next.level.index] <- j
@@ -285,11 +285,10 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
     for (i in ncol(bt2m.cellMeta):1) {
         bt2m.cellMeta <- bt2m.cellMeta[order( bt2m.cellMeta[,i] ),]
     }
-    #
-    bt2m.cellMeta <- cbind(bt2m.cellMeta.head, bt2m.cellMeta)
+    # add anno or not, better not
+    # bt2m.cellMeta <- cbind(known_anno=bt2m.cellMeta.head[rownames(bt2m.cellMeta),], bt2m.cellMeta)
     
-    return(list(cellMeta=bt2m.cellMeta, markerChain=bt2m.marker.chain, parentChild=bt2m.parentChild, 
-              clusterAnno=bt2m.clusterAnno))
+    return(list(cellMeta=bt2m.cellMeta, markerChain=bt2m.marker.chain, parentChild=bt2m.parentChild))
 }
 
 #' The main function to perform iteratively bifurcation clustering
@@ -345,7 +344,7 @@ RunBT2M.DC.denovo <- function(seuratObj, slot = "data", assay = "RNA", method = 
   # cannot start from specifc level, the marker list will be chaos
   bt2m.marker.chain <- data.frame()
   bt2m.parentChild <- data.frame()
-  bt2m.clusterAnno <- data.frame()
+  # bt2m.clusterAnno <- data.frame()
   ######################## Main Loop ###########################
   # iteratively bifurcation until no enough markers can be found
   for (i in 0:max.level.num) {
@@ -369,8 +368,8 @@ RunBT2M.DC.denovo <- function(seuratObj, slot = "data", assay = "RNA", method = 
       # can't find tmp.cells, don't know why?
       # judge the discrete and continuous cell
       # make sure every cluster was covered, no `next or break` before
-      tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=isConnected.igraph(tmp.seuratObj))
-      bt2m.clusterAnno <- rbind(bt2m.clusterAnno, tmp.clusterAnno)
+      # tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=isConnected.igraph(tmp.seuratObj))
+      # bt2m.clusterAnno <- rbind(bt2m.clusterAnno, tmp.clusterAnno)
       ######### pass end node flag to next level ##########
       if (grepl("end", j)) {
         bt2m.cellMeta[tmp.cells, next.level.index] <- j
@@ -469,8 +468,7 @@ RunBT2M.DC.denovo <- function(seuratObj, slot = "data", assay = "RNA", method = 
   for (i in ncol(bt2m.cellMeta):1) {
     bt2m.cellMeta <- bt2m.cellMeta[order( bt2m.cellMeta[,i] ),]
   }
-  return(list(cellMeta=bt2m.cellMeta, markerChain=bt2m.marker.chain, parentChild=bt2m.parentChild, 
-              clusterAnno=bt2m.clusterAnno))
+  return(list(cellMeta=bt2m.cellMeta, markerChain=bt2m.marker.chain, parentChild=bt2m.parentChild))
   ############### end of outer loop ###################
 }
 
@@ -484,10 +482,10 @@ RunBT2M.DC.denovo <- function(seuratObj, slot = "data", assay = "RNA", method = 
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-OrderCluster <- function(seuratObj, bt2m.result) {
+OrderCluster <- function(seuratObj, bt2m.result, verbose = F) {
     bt2m.cellMeta <- bt2m.result[["cellMeta"]]
-    bt2m.marker.chain <- bt2m.result[["marker_chain"]]
-    bt2m.bifucation <- bt2m.result[["bifucation"]]
+    bt2m.marker.chain <- bt2m.result[["markerChain"]]
+    bt2m.bifucation <- bt2m.result[["parentChild"]]
     #
     all.exprMat <- PrepareExpressionMatrix(seuratObj, bt2m.marker.chain, assay = "RNA", slot = "data")
     all.exprMat <- as.data.frame(t(all.exprMat))
@@ -572,11 +570,14 @@ OrderCluster <- function(seuratObj, bt2m.result) {
 #' @export
 #'
 RenameBT2M <- function(bt2m.result) {
+  # !!!!!!!! must start from L0
   # rename three files, bt2m.cellMeta is one type, bt2m.marker.chain and bt2m.bifucation are another type
   bt2m.cellMeta <- bt2m.result[["cellMeta"]]
+  # remove irrelavant coloumns
+  bt2m.cellMeta <- bt2m.cellMeta[,grep("^L", colnames(bt2m.cellMeta))]
   bt2m.marker.chain <- bt2m.result[["markerChain"]]
   bt2m.bifucation <- bt2m.result[["parentChild"]]
-  bt2m.clusterAnno <- bt2m.result[["clusterAnno"]]
+  # bt2m.clusterAnno <- bt2m.result[["clusterAnno"]]
   #
   # reoder the name of cluster name and marker module name
   all.map.df <- data.frame()
@@ -624,9 +625,9 @@ RenameBT2M <- function(bt2m.result) {
   #  strsplit(x, split = "_")[[1]][2]
   #}))
   #bt2m.clusterAnno[endLable.index,"cluster"] <- raw.endLable
-  bt2m.clusterAnno$cluster <- plyr::mapvalues(bt2m.clusterAnno$cluster,
-                                               from = all.map.df$old_cluster_prefix,
-                                               to = all.map.df$new_cluster_full)
+  #bt2m.clusterAnno$cluster <- plyr::mapvalues(bt2m.clusterAnno$cluster,
+  #                                             from = all.map.df$old_cluster_prefix,
+  #                                             to = all.map.df$new_cluster_full)
   for (i in grep("L", colnames(bt2m.cellMeta))) {
     # print(i)
     bt2m.cellMeta[,i] <- as.numeric(bt2m.cellMeta[,i])
@@ -638,8 +639,8 @@ RenameBT2M <- function(bt2m.result) {
   bt2m.result[["cellMeta"]] <- bt2m.cellMeta
   bt2m.result[["markerChain"]] <- bt2m.marker.chain
   bt2m.result[["parentChild"]] <- bt2m.bifucation
-  bt2m.result[["clusterAnno"]] <- bt2m.clusterAnno 
-  bt2m.result[["tranformLog"]] <- all.map.df 
+  #bt2m.result[["clusterAnno"]] <- bt2m.clusterAnno 
+  bt2m.result[["tranformLog"]] <- all.map.df.NoEnd 
   return(bt2m.result)
 }
 
@@ -848,7 +849,7 @@ clusterProfilerORA <- function(geneList=markerList, organism="hs") {
 #' @return A subset of seurat object
 #' @export
 #'
-subsetSeuratObjByCells <- function(seuratObj, tmp.cells) {
+SubsetSeuratObjByCells <- function(seuratObj, tmp.cells) {
   # tmp.cells <- rownames(tmp.bt2m.cellMeta.3)
   tmp <- rep(F, ncol(seuratObj))
   names(tmp) <- colnames(seuratObj)
@@ -1010,11 +1011,16 @@ rmDupMarkerAlongChain <- function(bt2m.cellMeta, bt2m.markerChain, target.cluste
 #' @return A Seurat object contains bt2m.result. bt2m will be stored in assay data region of Seurat object ("seuratObj@assays$bt2m")
 #' @export
 #'
-WriteBt2mIntoSeurat <- function(seuratObj, bt2m.result) {
+WriteBt2mIntoSeurat <- function(seuratObj, bt2m.result, verbose = F) {
   # get results
   bt2m.cellMeta <- bt2m.result[["cellMeta"]]
-  bt2m.marker.chain <- bt2m.result[["marker_chain"]]
-  bt2m.bifucation <- bt2m.result[["bifucation"]]
+  bt2m.marker.chain <- bt2m.result[["markerChain"]]
+  bt2m.bifucation <- bt2m.result[["parentChild"]]
+  # clean Ln lable
+  if (verbose) message("Removing previous Ln series annotation..")
+  for (i in colnames(seuratObj@meta.data)[grep("^L", colnames(seuratObj@meta.data))]) {
+      seuratObj@meta.data[[i]] <- NULL
+  }
   # input L-data to seurat
   for (i in colnames(bt2m.cellMeta)) {
     # print(i)
@@ -1022,6 +1028,7 @@ WriteBt2mIntoSeurat <- function(seuratObj, bt2m.result) {
     names(tmp.ident) <- rownames(bt2m.cellMeta)
     tmp.ident <- factor(tmp.ident, levels = sort(unique(tmp.ident)))
     seuratObj[[i]] <- tmp.ident
+    if (verbose) {message(sprintf("write %s to %s in Seurat Object", paste(unique(tmp.ident), collapse = ","), i))}
   }
   #bt2m.cellMeta <- bt2m.result[["cellMeta"]]
   #bt2m.marker.chain <- bt2m.result[["marker_chain"]]
