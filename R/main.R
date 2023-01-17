@@ -140,6 +140,157 @@ InitializeFeatureAnno <- function(seuratObj, slot = "count", assay = "RNA") {
 #' @export
 #'
 
+#' The main function to perform iteratively bifurcation clustering
+#'
+#' @param seuratObj A Seurat object
+#' @param method The method to perform bifurcation clustering "graph (default), hclust or kmeans"
+#' @param min.marker.num Minimal number of markers to confirm a bifurcation
+#' @param max.level.num Maximum number of level for bifurcation
+#' @param min.cell.count Minimal number of cells to perform bifurcation (must bigger than PC number: 50)
+#' @param resolution.sets The number of resolution for searching
+#' @param verbose Print detail proccessing messages
+#'
+#' @return A list. cellMeta contains the preliminary bifurcation for each level
+#' marker_chain contains all the significant markers for each cluster
+#' bifucation contains the bifurcation details (parent, child1, child2)
+#' @export
+#'
+RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
+    # basic info
+    message(paste("Current/Default reduction is", reduction, sep = " "))
+    seuratObj$cellName <- colnames(seuratObj)
+    ## create meta data
+    bt2m.cellMeta <- data.frame(known_anno=seuratObj@meta.data[,group], row.names = colnames(seuratObj),
+                            cellName = colnames(seuratObj))
+    # add initial one
+    bt2m.cellMeta$L0 <- 1
+    max.level.num <- length(unique(seuratObj@meta.data[,group]))
+    # add default L1-max.level.num
+    for (i in paste("L", 1:max.level.num, sep = "")) {
+        # print(i)
+        bt2m.cellMeta[,i] <- 0
+    }
+    data.use <- as.data.frame(Embeddings(object = seuratObj[[reduction]]))
+    aggr.data.use <- aggregate(data.use[, 1:ncol(data.use)], list(seuratObj@meta.data[,group]), mean)
+    rownames(aggr.data.use) <- aggr.data.use$`Group.1`
+    aggr.data.use$`Group.1` <- NULL
+    # cannot start from specifc level, the marker list will be chaos
+    bt2m.marker.chain <- data.frame()
+    bt2m.parentChild <- data.frame()
+    bt2m.clusterAnno <- data.frame()
+    ######################## Main Loop ###########################
+    for (i in 0:max.level.num) {
+        tmp.level.index <- paste("L",i,sep = "") # for getting data, current level
+        next.level.index <- paste("L",i+1,sep = "") # for writing data, next level
+        if (verbose) message(paste("We are now at", tmp.level.index, sep = " "))
+        # must do this, pass the cluster to next level, single cluster will be skipped.
+        bt2m.cellMeta[,next.level.index] <- bt2m.cellMeta[,tmp.level.index]
+        # j should be numeric, otherwise some algorithm cannot work.
+        ######################## second Loop ###########################
+        for (j in unique(bt2m.cellMeta[,tmp.level.index])) {
+            tmp.cluster.index <- paste(tmp.level.index, j, sep = "_") # this will be L1_1
+            tmp.cells <- bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$cellName
+            tmp.clusters <- unique(bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$known_anno)
+            tmp.seuratObj <- subsetSeuratObjByCells(seuratObj, tmp.cells)
+            # make sure every cluster was covered, no `next or break` before
+            tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=isConnected.igraph(tmp.seuratObj))
+            bt2m.clusterAnno <- rbind(bt2m.clusterAnno, tmp.clusterAnno)
+            ######### pass end node flag to next level ##########
+            if (grepl("end", j)) {
+                bt2m.cellMeta[tmp.cells, next.level.index] <- j
+                # message(paste(tmp.cluster.index, "was an end point, skipping...", sep = " "))
+                next
+            } else {
+                if (verbose) message(paste("Bifurcating", tmp.cluster.index, "...", sep = " "))
+            }
+            j <- as.numeric(j) # proccess the end point
+            if (length(tmp.clusters)==1) {
+                # exit when cells is less than 50
+                if (verbose) message(sprintf("%s only have 1 cluster, set it as an end node", 
+                                             paste(unique(tmp.clusters), collapse = ", ")))
+                # set next level
+                bt2m.cellMeta[tmp.cells, next.level.index] <- paste("end", next.level.index, 2*j-1, sep = "-")
+                # message(paste(tmp.cluster.index, "has no enough cells, this is a end point...", sep = " "))
+                next
+            }
+            ######################## Main function ###########################
+            tmp.aggr.data.use <- aggr.data.use[tmp.clusters,]
+            agn = cluster::agnes(x=tmp.aggr.data.use, diss = F, stand = T, method = "average")
+            # DendAgn = as.dendrogram(agn)
+            # plot(DendAgn)
+            tmp.BT <- dendextend::cutree(agn, k = 2)
+            # message(paste(names(tmp.BT), tmp.BT, collapse = ", "))
+            tmp.bulk.name <- plyr::mapvalues(tmp.BT, from = c(1,2), to = c(paste(names(tmp.BT)[tmp.BT==1], 
+                                                                                 collapse = ","),
+                                                 paste(names(tmp.BT)[tmp.BT==2], collapse = ",")))
+            #bt2m.cellMeta[tmp.cells, next.level.index] <- as.character(plyr::mapvalues(bt2m.cellMeta[tmp.cells,]$known_anno, 
+            #                                                            from = names(tmp.bulk.name), 
+            #                                                             to = tmp.bulk.name))
+            bt2m.cellMeta[tmp.cells, next.level.index] <- as.character(plyr::mapvalues(bt2m.cellMeta[tmp.cells,]$known_anno, 
+                                                                        from = names(tmp.BT), 
+                                                                         to = (2*j-2+tmp.BT)))
+            # identify markers
+            # set level first
+            tmp.seuratObj@active.ident <- factor(bt2m.cellMeta[tmp.cells, next.level.index], 
+                                                 levels = sort(unique(bt2m.cellMeta[tmp.cells, next.level.index])))
+            # next.cluster.index.1 <- levels(tmp.seuratObj@active.ident)[1]
+            # next.cluster.index.2 <- levels(tmp.seuratObj@active.ident)[2]
+            next.cluster.index.1 <- paste(next.level.index, 2*j-1, sep = "_")
+            next.cluster.index.2 <- paste(next.level.index, 2*j, sep = "_")
+            #
+            binary_markers <- FindBinaryMarkers(tmp.seuratObj, inputFactor = T, min_correlation = 0.1, 
+                                                verbose = verbose)
+            b1.markers <- binary_markers[["b1"]]
+            b2.markers <- binary_markers[["b2"]]
+            ######### write to cellMeta ##########
+            # add markerChain
+            b1.markers$parent <- tmp.cluster.index
+            b1.markers$cluster <- next.cluster.index.1
+            # creat marker unique ID
+            b1.markers$markerID <- paste(b1.markers$cluster, b1.markers$gene, sep = "_")
+            bt2m.marker.chain <- rbind(bt2m.marker.chain, b1.markers)
+            b2.markers$parent <- tmp.cluster.index
+            b2.markers$cluster <- next.cluster.index.2
+            # creat marker unique ID
+            b2.markers$markerID <- paste(b2.markers$cluster, b2.markers$gene, sep = "_")
+            bt2m.marker.chain <- rbind(bt2m.marker.chain, b2.markers)
+            # remove duplicate marker
+            # this could be slow, but this is normal, we need to remove duplicate once we add new, globally
+            bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.2)
+            #
+            # add annotation files
+            tmp.bifucation <- data.frame(parent=tmp.cluster.index, child1=next.cluster.index.1, 
+                                     child2=next.cluster.index.2)
+            bt2m.parentChild <- rbind(bt2m.parentChild, tmp.bifucation)
+            if (verbose) message(sprintf("Successfully split %s to %s and %s", tmp.cluster.index,
+                                     next.cluster.index.1, next.cluster.index.2))
+            # break
+        }
+        # break
+        # exist running when all cluster are end points
+        if (sum(!grepl("end", unique(bt2m.cellMeta[,tmp.level.index]))) == 0) {
+          message("Bifurcating stopped! No more clusters can be split")
+          break
+        }
+    }
+
+    #
+    bt2m.cellMeta <- bt2m.cellMeta[,c(rep(T,2), !duplicated(t(bt2m.cellMeta[,3:ncol(bt2m.cellMeta)])))]
+    bt2m.cellMeta.head <- bt2m.cellMeta[,1:2]
+    bt2m.cellMeta <- bt2m.cellMeta[,3:ncol(bt2m.cellMeta)]
+    # remove emplty levels
+    bt2m.cellMeta <- bt2m.cellMeta[,colSums(bt2m.cellMeta!=0)!=0]
+    bt2m.cellMeta.head$cellName <- NULL
+    # sort the df last to first, not the final one
+    for (i in ncol(bt2m.cellMeta):1) {
+        bt2m.cellMeta <- bt2m.cellMeta[order( bt2m.cellMeta[,i] ),]
+    }
+    #
+    bt2m.cellMeta <- cbind(bt2m.cellMeta.head, bt2m.cellMeta)
+    
+    return(list(cellMeta=bt2m.cellMeta, markerChain=bt2m.marker.chain, parentChild=bt2m.parentChild, 
+              clusterAnno=bt2m.clusterAnno))
+}
 
 #' The main function to perform iteratively bifurcation clustering
 #'
@@ -156,11 +307,11 @@ InitializeFeatureAnno <- function(seuratObj, slot = "count", assay = "RNA") {
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-RunBT2M.single <- function(seuratObj, slot = "data", assay = "RNA", method = "graph", min.marker.num = 100, 
-                    max.level.num = 20, min.cell.count = 50, resolution.sets = 51, verbose = F) {
+RunBT2M.DC <- function(seuratObj, slot = "data", assay = "RNA", method = "graph", min.marker.num = 100, 
+                    max.level.num = 20, min.cell.count = 50, verbose = F) {
   # basic info
   message(paste("Current/Default Assay is", DefaultAssay(seuratObj), sep = " "))
-  seuratObj$cellName <- colnames(seuratObj)
+  # seuratObj$cellName <- colnames(seuratObj)
   # check info
   tmp.exprM <- GetAssayData(seuratObj, slot = slot, assay = assay)
   if (length(tmp.exprM) == 0) {
@@ -201,7 +352,7 @@ RunBT2M.single <- function(seuratObj, slot = "data", assay = "RNA", method = "gr
     # prevoius.level.index <- paste("L",i-1,sep = "")
     tmp.level.index <- paste("L",i,sep = "") # for getting data, current level
     next.level.index <- paste("L",i+1,sep = "") # for writing data, next level
-    message(paste("We are now at", tmp.level.index, sep = " "))
+    if (verbose) message(paste("We are now at", tmp.level.index, sep = " "))
     # small testing
     # if (tmp.level.index=="L3") break
     ######################## second Loop ###########################
@@ -420,20 +571,22 @@ OrderCluster <- function(seuratObj, bt2m.result) {
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-RenameBt2m <- function(bt2m.result) {
+RenameBT2M <- function(bt2m.result) {
   # rename three files, bt2m.cellMeta is one type, bt2m.marker.chain and bt2m.bifucation are another type
   bt2m.cellMeta <- bt2m.result[["cellMeta"]]
-  bt2m.marker.chain <- bt2m.result[["marker_chain"]]
-  bt2m.bifucation <- bt2m.result[["bifucation"]]
+  bt2m.marker.chain <- bt2m.result[["markerChain"]]
+  bt2m.bifucation <- bt2m.result[["parentChild"]]
+  bt2m.clusterAnno <- bt2m.result[["clusterAnno"]]
   #
   # reoder the name of cluster name and marker module name
   all.map.df <- data.frame()
-  for (i in 1:ncol(bt2m.cellMeta)) {
+  # no need to start from 1st column
+  for (i in grep("L", colnames(bt2m.cellMeta))) {
     # find a key error, we start from L1
     # all old cluster name in each level
     tmp.cluster.name <- unique(bt2m.cellMeta[,i])
     # add level prefix
-    tmp.cluster.name2 <- paste("L",i-1,"_",tmp.cluster.name,sep = "")
+    tmp.cluster.name2 <- paste(colnames(bt2m.cellMeta)[i],"_",tmp.cluster.name,sep = "")
     # give new cluster name
     new.cluster.name <- 1:length(tmp.cluster.name2)
     tmp.map.df <- data.frame(old_cluster=tmp.cluster.name, old_cluster_prefix=tmp.cluster.name2,
@@ -465,7 +618,16 @@ RenameBt2m <- function(bt2m.result) {
   bt2m.bifucation$child2 <- plyr::mapvalues(bt2m.bifucation$child2,
                                                from = all.map.df.NoEnd$old_cluster_prefix,
                                                to = all.map.df.NoEnd$new_cluster_full)
-  for (i in 1:ncol(bt2m.cellMeta)) {
+  # some bug in end label
+  #endLable.index <- grep("end", bt2m.clusterAnno$cluster)
+  #raw.endLable <- unlist(lapply(bt2m.clusterAnno$cluster[endLable.index], function(x) {
+  #  strsplit(x, split = "_")[[1]][2]
+  #}))
+  #bt2m.clusterAnno[endLable.index,"cluster"] <- raw.endLable
+  bt2m.clusterAnno$cluster <- plyr::mapvalues(bt2m.clusterAnno$cluster,
+                                               from = all.map.df$old_cluster_prefix,
+                                               to = all.map.df$new_cluster_full)
+  for (i in grep("L", colnames(bt2m.cellMeta))) {
     # print(i)
     bt2m.cellMeta[,i] <- as.numeric(bt2m.cellMeta[,i])
     # break
@@ -474,8 +636,10 @@ RenameBt2m <- function(bt2m.result) {
   bt2m.cellMeta <- bt2m.cellMeta[,!duplicated(t(bt2m.cellMeta))]
   # output
   bt2m.result[["cellMeta"]] <- bt2m.cellMeta
-  bt2m.result[["marker_chain"]] <- bt2m.marker.chain
-  bt2m.result[["bifucation"]] <- bt2m.bifucation
+  bt2m.result[["markerChain"]] <- bt2m.marker.chain
+  bt2m.result[["parentChild"]] <- bt2m.bifucation
+  bt2m.result[["clusterAnno"]] <- bt2m.clusterAnno 
+  bt2m.result[["tranformLog"]] <- all.map.df 
   return(bt2m.result)
 }
 
