@@ -12,20 +12,27 @@
 #' @return A expression matrix contain the average expression of marker modules and known markers
 #' @export
 #'
-PrepareExpressionMatrix <- function(seuratObj, bt2m.marker.chain, assay="RNA", slot = "scale.data",
-                                              known_markers = c()) {
+PrepareExpressionMatrix <- function(seuratObj, bt2m.marker.chain, assay="RNA", slot = "scale.data", min.marker.num = 10,
+                                              known_markers = c(), verbose = F) {
   # get data
   reference.data <- GetAssayData(object = seuratObj, assay = assay, slot = slot)
   reference.data <- as.matrix(reference.data) # RNA data is not matrix
   if (is.null(reference.data)) stop("Data not exist. Please input right assay and slot!!!")
   all.exprMat <- data.frame()
+  tmp.name.list <- c()
   for (i in unique(bt2m.marker.chain$cluster)) {
     tmp.module <- subset(bt2m.marker.chain, cluster==i)$gene
+    if (length(tmp.module) < min.marker.num) {
+        next
+    } else {
+        tmp.name.list <- c(tmp.name.list, i)
+    }
+    if (verbose) message(sprintf("Find %s genes in %s cluster.", length(tmp.module), i))
     tmp.exprMat <- colMeans(reference.data[tmp.module,])
     all.exprMat <- rbind(all.exprMat, tmp.exprMat)
     # break
   }
-  rownames(all.exprMat) <- unique(bt2m.marker.chain$cluster)
+  rownames(all.exprMat) <- tmp.name.list # unique(bt2m.marker.chain$cluster)
   colnames(all.exprMat) <- colnames(reference.data)
   # gene for validation
   if (length(known_markers)>1) {
