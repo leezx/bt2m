@@ -307,7 +307,7 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-RunBT2M.DC <- function(seuratObj, slot = "data", assay = "RNA", method = "graph", min.marker.num = 100, 
+RunBT2M.DC.denovo <- function(seuratObj, slot = "data", assay = "RNA", method = "graph", min.marker.num = 100, 
                     max.level.num = 20, min.cell.count = 50, verbose = F) {
   # basic info
   message(paste("Current/Default Assay is", DefaultAssay(seuratObj), sep = " "))

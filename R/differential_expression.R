@@ -22,7 +22,7 @@ FindBinaryMarkers <- function(seuratObj, method = "presto", inputFactor = F, slo
     if (length(tmp.levels) != 2) stop("Input factors, but the level number is not 2 for active.ident!!!")
     seuratObj@active.ident <- plyr::mapvalues(seuratObj@active.ident, from = tmp.levels, to = c(0,1))
   } else {
-    if (sum(sort(unique(seuratObj@active.ident)) == c(0,1)) != 2) stop("The cluster names are not 0 and 1.")
+    if (sum(sort(unique(seuratObj@active.ident)) %in% c(0,1)) != 2) stop("The cluster names are not 0 and 1.")
   }
   # need high quality markers, correlation is the best indicator
   binary_markers <- list()
