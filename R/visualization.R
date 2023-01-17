@@ -71,13 +71,17 @@ Bt2mColors <- function() {
 #' @export
 #'
 DrawMarkerChainHeatmap <- function(seuratObj, bt2m.cellMeta, bt2m.marker.chain, compare_anno="",
-                                        known_markers=c()) {
+                                        known_markers=c(), verbose = F) {
   # get data
-  all.exprMat <- PrepareExpressionMatrix(seuratObj, bt2m.marker.chain, known_markers=known_markers)
+  all.exprMat <- PrepareExpressionMatrix(seuratObj, bt2m.marker.chain, slot = "scale.data", 
+                                         known_markers=known_markers)
   # heatmap color set
-  col_fun = circlize::colorRamp2(c(-2, 0, 3), c("green", "white", "red"))
-  # col_fun = colorRamp2(c(-2, 0, 3), c("#FF00FF","#000000","#FFFF00")) # seurat color
+  col_fun = circlize::colorRamp2(c(-1, 0, 1), c("green", "white", "red"))
+  #col_fun = circlize::colorRamp2(c(-2, 0, 2), c("#FF00FF","#000000","#FFFF00")) # seurat color
+  #col_fun = circlize::colorRamp2(c(-2, 0, 2), c("blue","yellow","red"))
   col_fun(seq(-3, 3))
+  # col_fun = colorRampPalette(RColorBrewer::brewer.pal(8, "Blues"))(25) # bad
+  # col_fun = colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, name = "RdYlBu")))(100)
   # get colors
   bt2m.colors <- Bt2mColors()
   # prepare color
@@ -111,6 +115,9 @@ DrawMarkerChainHeatmap <- function(seuratObj, bt2m.cellMeta, bt2m.marker.chain, 
   )
   #
   # options(repr.plot.width=10, repr.plot.height=7)
+  if (verbose) message("yes")
+  rownames(all.exprMat) <- paste(names(table(bt2m.marker.chain$cluster)[rownames(all.exprMat)]), 
+                                 " (",table(bt2m.marker.chain$cluster)[rownames(all.exprMat)]," g)", sep = "")
   ht <- ComplexHeatmap::Heatmap(all.exprMat[,rownames(bt2m.cellMeta)], col = col_fun, name = "Expression",
                 #row_split = sc3_marker$cluster, column_split = anno$col$Cluster, layer_fun = layer_fun,
                 use_raster = F,

@@ -155,14 +155,15 @@ InitializeFeatureAnno <- function(seuratObj, slot = "count", assay = "RNA") {
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
+RunBT2M.AC.supervise <- function(seuratObj, group, reduction = "umap", verbose = F) {
     # basic info
     message(paste("Current/Default reduction is", reduction, sep = " "))
     seuratObj$cellName <- colnames(seuratObj)
-    ## create meta data
-    bt2m.cellMeta <- data.frame(known_anno=seuratObj@meta.data[,group], row.names = colnames(seuratObj),
+    ## create meta data head
+    bt2m.cellMeta.head <- data.frame(known_anno=seuratObj@meta.data[,group], row.names = colnames(seuratObj),
                             cellName = colnames(seuratObj))
     # add initial one
+    bt2m.cellMeta <- data.frame(row.names = seuratObj$cellName, cellName = colnames(seuratObj), stringsAsFactors = F)
     bt2m.cellMeta$L0 <- 1
     max.level.num <- length(unique(seuratObj@meta.data[,group]))
     # add default L1-max.level.num
@@ -190,7 +191,7 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
         for (j in unique(bt2m.cellMeta[,tmp.level.index])) {
             tmp.cluster.index <- paste(tmp.level.index, j, sep = "_") # this will be L1_1
             tmp.cells <- bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$cellName
-            tmp.clusters <- unique(bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,]$known_anno)
+            tmp.clusters <- unique(bt2m.cellMeta.head[bt2m.cellMeta[,tmp.level.index]==j,]$known_anno)
             tmp.seuratObj <- subsetSeuratObjByCells(seuratObj, tmp.cells)
             # make sure every cluster was covered, no `next or break` before
             # tmp.clusterAnno <- data.frame(cluster=tmp.cluster.index, state=isConnected.igraph(tmp.seuratObj))
@@ -226,7 +227,7 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
             #bt2m.cellMeta[tmp.cells, next.level.index] <- as.character(plyr::mapvalues(bt2m.cellMeta[tmp.cells,]$known_anno, 
             #                                                            from = names(tmp.bulk.name), 
             #                                                             to = tmp.bulk.name))
-            bt2m.cellMeta[tmp.cells, next.level.index] <- as.character(plyr::mapvalues(bt2m.cellMeta[tmp.cells,]$known_anno, 
+            bt2m.cellMeta[tmp.cells, next.level.index] <- as.character(plyr::mapvalues(bt2m.cellMeta.head[tmp.cells,]$known_anno, 
                                                                         from = names(tmp.BT), 
                                                                          to = (2*j-2+tmp.BT)))
             # identify markers
@@ -249,6 +250,8 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
             # creat marker unique ID
             b1.markers$markerID <- paste(b1.markers$cluster, b1.markers$gene, sep = "_")
             bt2m.marker.chain <- rbind(bt2m.marker.chain, b1.markers)
+            bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.1, verbose = T)
+            #
             b2.markers$parent <- tmp.cluster.index
             b2.markers$cluster <- next.cluster.index.2
             # creat marker unique ID
@@ -256,7 +259,7 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
             bt2m.marker.chain <- rbind(bt2m.marker.chain, b2.markers)
             # remove duplicate marker
             # this could be slow, but this is normal, we need to remove duplicate once we add new, globally
-            bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.2)
+            bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.2, verbose = T)
             #
             # add annotation files
             tmp.bifucation <- data.frame(parent=tmp.cluster.index, child1=next.cluster.index.1, 
@@ -273,14 +276,13 @@ RunBT2M.AC <- function(seuratObj, group, reduction = "umap", verbose = F) {
           break
         }
     }
-
     #
-    bt2m.cellMeta <- bt2m.cellMeta[,c(rep(T,2), !duplicated(t(bt2m.cellMeta[,3:ncol(bt2m.cellMeta)])))]
-    bt2m.cellMeta.head <- bt2m.cellMeta[,1:2]
-    bt2m.cellMeta <- bt2m.cellMeta[,3:ncol(bt2m.cellMeta)]
+    bt2m.cellMeta <- bt2m.cellMeta[,!duplicated(t(bt2m.cellMeta[,1:ncol(bt2m.cellMeta)]))]
+    # bt2m.cellMeta.head <- bt2m.cellMeta[,1:2]
+    # bt2m.cellMeta <- bt2m.cellMeta[,3:ncol(bt2m.cellMeta)]
     # remove emplty levels
     bt2m.cellMeta <- bt2m.cellMeta[,colSums(bt2m.cellMeta!=0)!=0]
-    bt2m.cellMeta.head$cellName <- NULL
+    bt2m.cellMeta$cellName <- NULL
     # sort the df last to first, not the final one
     for (i in ncol(bt2m.cellMeta):1) {
         bt2m.cellMeta <- bt2m.cellMeta[order( bt2m.cellMeta[,i] ),]
@@ -437,7 +439,7 @@ RunBT2M.DC.extend <- function(seuratObj, bt2m.result, slot = "data", assay = "RN
         b1.markers$markerID <- paste(b1.markers$cluster, b1.markers$gene, sep = "_")
         bt2m.marker.chain <- rbind(bt2m.marker.chain, b1.markers)
         # remove duplicate marker
-        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.1)
+        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.1, verbose = T)
       }
       if (nrow(b2.markers) >= min.marker.num) {
         b2.markers$parent <- tmp.cluster.index
@@ -447,7 +449,7 @@ RunBT2M.DC.extend <- function(seuratObj, bt2m.result, slot = "data", assay = "RN
         bt2m.marker.chain <- rbind(bt2m.marker.chain, b2.markers)
         # remove duplicate marker
         # this could be slow, but this is normal, we need to remove duplicate once we add new, globally
-        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.2)
+        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.2, verbose = T)
       }
       ######### set end node flag 2 ##########
       if ((nrow(b1.markers) < min.marker.num) && (nrow(b2.markers) < min.marker.num)) {
@@ -620,7 +622,7 @@ RunBT2M.DC.denovo <- function(seuratObj, slot = "data", assay = "RNA", method = 
         b1.markers$markerID <- paste(b1.markers$cluster, b1.markers$gene, sep = "_")
         bt2m.marker.chain <- rbind(bt2m.marker.chain, b1.markers)
         # remove duplicate marker
-        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.1)
+        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.1, verbose = T)
       }
       if (nrow(b2.markers) >= min.marker.num) {
         b2.markers$parent <- tmp.cluster.index
@@ -630,7 +632,7 @@ RunBT2M.DC.denovo <- function(seuratObj, slot = "data", assay = "RNA", method = 
         bt2m.marker.chain <- rbind(bt2m.marker.chain, b2.markers)
         # remove duplicate marker
         # this could be slow, but this is normal, we need to remove duplicate once we add new, globally
-        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.2)
+        bt2m.marker.chain <- rmDupMarkerAlongChain(bt2m.cellMeta, bt2m.marker.chain, next.cluster.index.2, verbose = T)
       }
       ######### set end node flag 2 ##########
       if ((nrow(b1.markers) < min.marker.num) && (nrow(b2.markers) < min.marker.num)) {
@@ -1186,14 +1188,34 @@ GetClusterChainNoName <- function(bt2m.cellMeta, target.cluster) {
 #' @return A vector, names are cluster name, element shows the states of clusters
 #' @export
 #'
-rmDupMarkerAlongChain <- function(bt2m.cellMeta, bt2m.markerChain, target.cluster) {
+rmDupMarkerAlongChain <- function(bt2m.cellMeta, bt2m.markerChain, target.cluster, score = "combine", 
+                                  verbose = F) {
+  # check data, remove this
+  # if (!is.null(bt2m.cellMeta$cellName)) bt2m.cellMeta$cellName <- NULL
+  if (verbose) message(sprintf("use %s to remove Duplicates.", score))
   # get marker chain
   tmpClusterChain <- GetClusterChainNoName(bt2m.cellMeta, target.cluster)
+  tmpClusterChain <- tmpClusterChain[!grepl("cellName", tmpClusterChain)]
+  # cut the chain from L0_1 to target.cluster
+  tmpClusterChain <- tmpClusterChain[1:which(tmpClusterChain==target.cluster)]
+  if (verbose) message(sprintf("Cluster %s is linked by %s", target.cluster, paste(tmpClusterChain, collapse = "->")))
   # get all duplicated markerID in current chain
   tmpMarkerChain <- subset(bt2m.markerChain, cluster %in% tmpClusterChain)
-  tmpMarkerChain$correlation <- abs(tmpMarkerChain$correlation)
-  tmpMarkerChain <- tmpMarkerChain[order(tmpMarkerChain$correlation, decreasing = T),]
+  if (score == "correlation") {
+      # use correlation to rm dup
+      tmpMarkerChain$score <- abs(tmpMarkerChain$correlation)
+  } else if (score == "percentage") {
+      tmpMarkerChain$score <- tmpMarkerChain$pct_in - tmpMarkerChain$pct_out
+  } else if (score == "combine") {
+      tmpMarkerChain$score <- (tmpMarkerChain$pct_in - tmpMarkerChain$pct_out) * abs(tmpMarkerChain$correlation)
+  } else {
+      stop("Please choose correlation, percentage or combine for score!!!")
+  }
+  # sort by score
+  tmpMarkerChain <- tmpMarkerChain[order(tmpMarkerChain$score, decreasing = T),]
+  # mark duplicated marker genes along the tmpMarkerChain
   dupMarkerID <- tmpMarkerChain[duplicated(tmpMarkerChain$gene),]$markerID
+  if (verbose) message(sprintf("%s duplicated markers are removed.", length(dupMarkerID)))
   # remove duplicated markerID
   bt2m.markerChain <- subset(bt2m.markerChain, !markerID %in% dupMarkerID)
   return(bt2m.markerChain)
