@@ -62,7 +62,7 @@ isConnected.igraph <- function(seuratObj, returnFormat = "is_connected") {
       }
 }
 
-#' judge the discrete and continuous cell
+#' judge the discrete and continuous cell 2
 #'
 #' @param seuratObj A Seurat object
 #' @param slot The method to perform bifurcation clustering "graph (default), hclust or kmeans"
@@ -124,23 +124,7 @@ InitializeFeatureAnno <- function(seuratObj, slot = "count", assay = "RNA") {
     seuratObj
 }
 
-#' Start from known cell type annotation
-#'
-#' @param seuratObj A Seurat object
-#' @param method The method to perform bifurcation clustering "graph (default), hclust or kmeans"
-#' @param min.marker.num Minimal number of markers to confirm a bifurcation
-#' @param max.level.num Maximum number of level for bifurcation
-#' @param min.cell.count Minimal number of cells to perform bifurcation (must bigger than PC number: 50)
-#' @param resolution.sets The number of resolution for searching
-#' @param verbose Print detail proccessing messages
-#'
-#' @return A list. cellMeta contains the preliminary bifurcation for each level
-#' marker_chain contains all the significant markers for each cluster
-#' bifucation contains the bifurcation details (parent, child1, child2)
-#' @export
-#'
-
-#' The main function to perform iteratively bifurcation clustering
+#' Start from known cell type annotation RunBT2M.AC.supervise
 #'
 #' @param seuratObj A Seurat object
 #' @param method The method to perform bifurcation clustering "graph (default), hclust or kmeans"
@@ -293,7 +277,7 @@ RunBT2M.AC.supervise <- function(seuratObj, group, reduction = "umap", verbose =
     return(list(cellMeta=bt2m.cellMeta, markerChain=bt2m.marker.chain, parentChild=bt2m.parentChild))
 }
 
-#' The main function to perform iteratively bifurcation clustering
+#' The main function to perform iteratively bifurcation clustering RunBT2M.DC.extend
 #'
 #' @param seuratObj A Seurat object
 #' @param method The method to perform bifurcation clustering "graph (default), hclust or kmeans"
@@ -489,7 +473,7 @@ RunBT2M.DC.extend <- function(seuratObj, bt2m.result, slot = "data", assay = "RN
   ############### end of outer loop ###################
 }
 
-#' The main function to perform iteratively bifurcation clustering
+#' The main function to perform iteratively bifurcation clustering RunBT2M.DC.denovo
 #'
 #' @param seuratObj A Seurat object
 #' @param method The method to perform bifurcation clustering "graph (default), hclust or kmeans"

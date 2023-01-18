@@ -4,7 +4,7 @@
 \alias{WriteBt2mIntoSeurat}
 \title{Write bt2m result to Seurat object}
 \usage{
-WriteBt2mIntoSeurat(seuratObj, bt2m.result)
+WriteBt2mIntoSeurat(seuratObj, bt2m.result, verbose = F)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}

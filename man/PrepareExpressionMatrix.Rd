@@ -9,7 +9,9 @@ PrepareExpressionMatrix(
   bt2m.marker.chain,
   assay = "RNA",
   slot = "scale.data",
-  known_markers = c()
+  min.marker.num = 10,
+  known_markers = c(),
+  verbose = F
 )
 }
 \arguments{

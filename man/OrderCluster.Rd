@@ -4,7 +4,7 @@
 \alias{OrderCluster}
 \title{order the clusters according to similarity inside the bt2m result}
 \usage{
-OrderCluster(seuratObj, bt2m.result)
+OrderCluster(seuratObj, bt2m.result, verbose = F)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}

@@ -29,7 +29,7 @@ Imports:
   Hmisc,
   stringr,
   cowplot,
-  plyr
+  plyr,
   igraph
 Suggests:
   testthat

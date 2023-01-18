@@ -9,7 +9,8 @@ DrawMarkerChainHeatmap(
   bt2m.cellMeta,
   bt2m.marker.chain,
   compare_anno = "",
-  known_markers = c()
+  known_markers = c(),
+  verbose = F
 )
 }
 \arguments{

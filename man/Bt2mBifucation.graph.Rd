@@ -6,9 +6,12 @@
 \usage{
 Bt2mBifucation.graph(
   seuratObj,
-  resolution.sets = 50,
+  cAlgorithm = 4,
+  graph.name = "RNA_snn",
   slot = "data",
-  assay = "RNA"
+  assay = "RNA",
+  force = T,
+  verbose = F
 )
 }
 \arguments{
