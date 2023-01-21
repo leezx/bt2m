@@ -362,7 +362,7 @@ RunBT2M.DC.extend <- function(seuratObj, bt2m.result, slot = "data", assay = "RN
       tmp.cells <- rownames(bt2m.cellMeta[bt2m.cellMeta[,tmp.level.index]==j,])
       # message(length(tmp.cells))
       # subset funciton have problem
-      tmp.seuratObj <- subsetSeuratObjByCells(seuratObj, tmp.cells)
+      tmp.seuratObj <- SubsetSeuratObjByCells(seuratObj, tmp.cells)
       # tmp.seuratObj <- subset(seuratObj, subset = cellName %in% tmp.cells) 
       # can't find tmp.cells, don't know why?
       # judge the discrete and continuous cell
