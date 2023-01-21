@@ -94,6 +94,4 @@ seuset@assays$bt2m$GO_chain <- bt2m.GO.anno
 # GO chain
 
 # Contact us
-Author: Zhixin Li
-
-Maintainer: Zhixin Li <zxlee@hku.hk>
+Developer & Maintainer: Zhixin Li <zhixin_li@dfci.harvard.edu>
