@@ -72,3 +72,67 @@ FindBinaryMarkers <- function(seuratObj, method = "presto", inputFactor = F, slo
   return(binary_markers)
 }
 
+
+#' Add low, mid, high assays to seuratObj, for comprehensive marker identification
+#' 
+#' @param seuratObj A Seurat object
+#' @param p_value The number of resolution for searching
+#' @param min_avg_logFC Minimal threshold for logFC to pick markers
+#' @param min_correlation Minimal threshold for correlation to pick markers
+#' 
+#' @return A list. b1 is the positive marker of cluster 0, b2 is the positive marker of cluster 1.
+#' @export
+#' 
+Add3LevelsAssay <- function(seuratObj, slot = "data", assay = "RNA", verbose = F) {
+    #
+    message("This may consume a large amount of memory...")
+    tmp.exprM <- GetAssayData(seuratObj, slot = slot, assay = assay)
+    # SetAssayData
+    rowQuant <- apply(tmp.exprM, 1, function(x) {
+        quantile(x[x!=0], probs = c(0,0.3,0.6))
+        # max(x)
+    })
+    rowQuant[is.na(rowQuant)] <- 1
+    # low
+    exprM.low <- tmp.exprM > rowQuant[1,]
+    exprM.low <- as(exprM.low, "dgCMatrix")
+    # mid
+    exprM.mid <- tmp.exprM > rowQuant[2,]
+    exprM.mid <- as(exprM.mid, "dgCMatrix")
+    # high
+    exprM.high <- tmp.exprM > rowQuant[3,]
+    exprM.high <- as(exprM.high, "dgCMatrix")
+    # write to new assays
+    if (verbose) message("Adding new assay: RNA_lowT...")
+    seuratObj@assays[["RNA_lowT"]] <- CreateAssayObject(counts = exprM.low)
+    seuratObj@assays[["RNA_lowT"]]@key <- "rna_lowt_"
+    if (verbose) message("Adding new assay: RNA_midT...")
+    seuratObj@assays[["RNA_midT"]] <- CreateAssayObject(counts = exprM.mid)
+    seuratObj@assays[["RNA_midT"]]@key <- "rna_midt_"
+    if (verbose) message("Adding new assay: RNA_higT...")
+    seuratObj@assays[["RNA_higT"]] <- CreateAssayObject(counts = exprM.high)
+    seuratObj@assays[["RNA_higT"]]@key <- "rna_higt_"
+    return(seuratObj)
+}
+
+#' Estimate dropout rate of single-cell RNA-seq data by house keeping genes
+#' 
+#' @param seuratObj A Seurat object
+#' @param p_value The number of resolution for searching
+#' @param min_avg_logFC Minimal threshold for logFC to pick markers
+#' @param min_correlation Minimal threshold for correlation to pick markers
+#' 
+#' @return A list. b1 is the positive marker of cluster 0, b2 is the positive marker of cluster 1.
+#' @export
+#' 
+EstimateDropoutRate <- function(seuratObj, organism="mm", top = 15) {
+    if (organism=="mm") {
+        hkg <- mouse.house.keeping.gene
+    } else if (organism=="hs") {
+        hkg <- human.house.keeping.gene
+    } else {
+        stop("Please input hs or mm for organism!!!")
+    }
+    tmp.ratio <- rowSums(seuratObj@assays$RNA@counts[hkg,] > 0) / ncol(seuratObj)
+    return(median(sort(tmp.ratio, decreasing=T)[1:top]))
+}

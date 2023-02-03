@@ -41,25 +41,38 @@ SeuratStandardPipeline <- function(seuratObj) {
 #' bifucation contains the bifurcation details (parent, child1, child2)
 #' @export
 #'
-isConnected.igraph <- function(seuratObj, returnFormat = "is_connected") {
+isConnected.igraph <- function(seuratObj, N = 10, reduction = "umap.rna", 
+                               returnFormat = "is_connected", plot = F, verbose = F) {
     #
-    seuratObj <- Seurat::FindNeighbors(object = seuratObj, k.param = 10, prune.SNN = 1/15, dims = 1:2, 
-                                      reduction = "umap", compute.SNN = T, verbose = F)
-    g <- seuratObj@graphs$RNA_snn
+    seuratObj <- Seurat::FindNeighbors(object = seuratObj, k.param = N, prune.SNN = 1/15, 
+                        dims = 1:2, reduction = reduction, compute.SNN = T, verbose = verbose)
+    snn_name <- names(seuratObj@graphs)[grep("snn", names(seuratObj@graphs))]
+    if (verbose) message(sprintf("snn_name is %s", snn_name))
+    g <- seuratObj@graphs[[snn_name]]
     attributes(g)[[1]] <- NULL
     attributes(g)$class <- "dgCMatrix"
     g <- igraph::graph_from_adjacency_matrix(adjmatrix = g, mode = "undirected", diag = F, 
                                              weighted = TRUE, add.colnames = TRUE)
-    # plot(g, layout = as.matrix(tmp.seuset.flt@reductions$umap@cell.embeddings[, c("UMAP_1", "UMAP_2")]), 
-    #     vertex.label=NA, vertex.size = 1, edge.curved = 0, edge.width = 0.5, vertex.label.dist = 1.1, 
-    #     vertex.label.degree = -pi/4, vertex.label.family = "Helvetica", vertex.label.font = 1, 
-    #     vertex.label.cex = 0, margin = 0)
+    if (plot) {
+        if (verbose) message("Plotting KNN based on UMAP...")
+        plot(g, layout = as.matrix(seuratObj@reductions[[reduction]]@cell.embeddings), 
+             vertex.label=NA, vertex.size = 1, edge.curved = 0, edge.width = 0.5, 
+           vertex.label.dist = 1.1, vertex.label.degree = -pi/4, vertex.label.family = "Helvetica", 
+           vertex.label.font = 1, vertex.label.cex = 0, margin = 0)
+    }
+    
     # components(g, mode = "strong") # a good function
     if (returnFormat == "is_connected") {
+      if (verbose) message("Output is igraph::is_connected...")
       return(ifelse(igraph::is_connected(g, mode = "strong"),"continuous","discrete")) 
       } else if (returnFormat == "components") {
-        return(igraph::components(g, mode = "strong"))
-      }
+        if (verbose) message("Output is igraph::components...")
+        seuratObj$MaximunDiscreteClusters <- igraph::components(g, mode = "strong")$membership
+        return(seuratObj)
+        # return(igraph::components(g, mode = "strong"))
+      } else {
+        stop("Please input is_connected or components for returnFormat!!!")
+    }
 }
 
 #' judge the discrete and continuous cell 2

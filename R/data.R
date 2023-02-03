@@ -97,3 +97,25 @@ GetTestData <- function() {
 #' @source \url{https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest}
 #'
 "gene.anno.GRCh38.v3"
+
+#' mouse.house.keeping.gene
+#'
+#' mouse.house.keeping.gene
+#'
+#' @format A vector
+#' @concept data
+#' @source \url{https://housekeeping.unicamp.br/?download}
+#'
+"mouse.house.keeping.gene"
+
+#' human.house.keeping.gene
+#'
+#' human.house.keeping.gene
+#'
+#' @format A vector
+#' @concept data
+#' @source \url{https://housekeeping.unicamp.br/?download}
+#'
+"human.house.keeping.gene"
+
+
