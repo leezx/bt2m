@@ -142,7 +142,7 @@ Bt2mBifucation.hclust <- function(seuratObj, method="euclidean", slot = "data", 
   if (method=="euclidean") {
     distMat <- parDist(data.use, threads = 3, method = "euclidean")
   } else if (method=="correlation") {
-    distMat <- fastCor(t(data.use))
+    distMat <- HiClimR::fastCor(t(data.use))
     distMat <- as.dist(distMat)
   }
   hc <- fastcluster::hclust(distMat)
