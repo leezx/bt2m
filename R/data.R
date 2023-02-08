@@ -118,4 +118,12 @@ GetTestData <- function() {
 #'
 "human.house.keeping.gene"
 
-
+#' m6A writer, eraser and reader in human and mouse
+#'
+#' m6A.regulators
+#'
+#' @format A vector
+#' @concept data
+#' @source \url{https://housekeeping.unicamp.br/?download}
+#'
+"m6A.regulators"
