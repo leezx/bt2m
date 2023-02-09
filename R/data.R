@@ -98,23 +98,31 @@ GetTestData <- function() {
 #'
 "gene.anno.GRCh38.v3"
 
-#' mouse.house.keeping.gene
+#' Mouse house keeping genes
 #'
-#' mouse.house.keeping.gene
+#' A list of genes used in marker annotation
 #'
-#' @format A vector
+#' @format A list of two vectors
+#' \describe{
+#'   \item{mouse.ligand}{ligand genes in mouse}
+#'   \item{mouse.receptor}{receptor genes in mouse}
+#' }
 #' @concept data
-#' @source \url{https://housekeeping.unicamp.br/?download}
+#' @source \url{http://www.cellchat.org/}
 #'
 "mouse.house.keeping.gene"
 
-#' human.house.keeping.gene
+#' Human house keeping genes
 #'
-#' human.house.keeping.gene
+#' A list of genes used in marker annotation
 #'
-#' @format A vector
+#' @format A list of two vectors
+#' \describe{
+#'   \item{mouse.ligand}{ligand genes in mouse}
+#'   \item{mouse.receptor}{receptor genes in mouse}
+#' }
 #' @concept data
-#' @source \url{https://housekeeping.unicamp.br/?download}
+#' @source \url{http://www.cellchat.org/}
 #'
 "human.house.keeping.gene"
 

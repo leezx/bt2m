@@ -4,7 +4,14 @@
 \alias{isConnected.igraph}
 \title{judge the discrete and continuous cell}
 \usage{
-isConnected.igraph(seuratObj, returnFormat = "is_connected")
+isConnected.igraph(
+  seuratObj,
+  N = 10,
+  reduction = "umap.rna",
+  returnFormat = "is_connected",
+  plot = F,
+  verbose = F
+)
 }
 \arguments{
 \item{seuratObj}{A Seurat object}
