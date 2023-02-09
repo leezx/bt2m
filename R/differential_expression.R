@@ -125,14 +125,14 @@ Add3LevelsAssay <- function(seuratObj, slot = "data", assay = "RNA", verbose = F
 #' @return A list. b1 is the positive marker of cluster 0, b2 is the positive marker of cluster 1.
 #' @export
 #' 
-EstimateDropoutRate <- function(seuratObj, top = 15, hkg) {
-    # if (organism=="mm") {
-    #     hkg <- mouse.house.keeping.gene
-    # } else if (organism=="hs") {
-    #     hkg <- human.house.keeping.gene
-    # } else {
-    #     stop("Please input hs or mm for organism!!!")
-    # }
+EstimateDropoutRate <- function(seuratObj, top = 15, organism="mm") {
+    if (organism=="mm") {
+        hkg <- mouse.house.keeping.gene
+    } else if (organism=="hs") {
+        hkg <- human.house.keeping.gene
+    } else {
+        stop("Please input hs or mm for organism!!!")
+    }
     tmp.ratio <- rowSums(seuratObj@assays$RNA@counts[hkg,] > 0) / ncol(seuratObj)
     return(median(sort(tmp.ratio, decreasing=T)[1:top]))
 }
