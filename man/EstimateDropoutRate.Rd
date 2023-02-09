@@ -4,7 +4,7 @@
 \alias{EstimateDropoutRate}
 \title{Estimate dropout rate of single-cell RNA-seq data by house keeping genes}
 \usage{
-EstimateDropoutRate(seuratObj, top = 15, hkg)
+EstimateDropoutRate(seuratObj, top = 15, organism = "mm")
 }
 \arguments{
 \item{seuratObj}{A Seurat object}
