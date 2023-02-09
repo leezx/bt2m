@@ -9,6 +9,18 @@ Import packages: stats, utils, Seurat, dplyr, clustree, ggplot2, ComplexHeatmap,
 
 Citation: submitted....
 
+# Quick update
+```
+conda activate r4p3
+Rscript -e "devtools::document()"
+git push
+```
+```
+detach("package:bt2m", unload=TRUE)
+devtools::install_github("leezx/bt2m", dependencies = F, force = T)
+library(bt2m)
+```
+
 # 1. Installation
 CRAN
 ```
